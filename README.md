@@ -9,8 +9,8 @@ It implements the algebras Monad (map, ap, of, chain) and Semigroup (concat).
 
 A Validation can be only one of these:
 
-- A Valid value, or
-- An Invalid value with a non empty errors array.
+- A `Valid<T>` value of type T, or
+- An `Invalid<E, T>` value of type T with a non empty errors array of type E[].
 
 A value and an error can be whatever type you want: strings, booleans, and even objects. All the errors in the array must have the same type though.
 
@@ -182,26 +182,57 @@ invalid('test', ['contain-numbers']).fold(
 ) // => 'Value "test" has failed these validations: ["contain-numbers"]'
 ```
 
+## Either adapters
+
+**Note:** You can use any type as Either here, as long as it has a function with the following signature:
+```javascript
+type Either<T, U> = {
+    fold: <A>(this: Either<T, U>, left: (t: T) => A, right: (u: U) => A) => A
+}
+```
+
 #### - `validateEither(either: Either<E[], T>): Validation<E, T>`
+If the either is a Left, concatenates the errors to their own.
+If the either is a Right, modifies the value.
 
 ```javascript
-
+valid(42).validateEither(Right(42)) // => Valid(42)
+valid('').validateEither(Left(['Empty value'])) // => Invalid('', ['Empty value'])
 ```
 
 #### - `validateEitherList(eitherList: Either<E[], T>[]): Validation<E, T>`
+Concatenates the errors of all the Left eithers in the list and keeps the value of the last Right either, or the validation value if none.
 
 ```javascript
-
+valid('wrong zipcode').validateEitherList([
+    Left(['Must have numbers']),
+    Right(''),
+]) // => Invalid('', ['Must have numbers'])
 ```
 
 #### - `validate(validator: (t: T) => Either<E[], T>): Validation<E, T>`
+Validates the value against the validator. If it returns a Right (passes), the new value is kept. If it returns a Left (fails), the errors are concatenated.
 
 ```javascript
+const isNotEmpty = str => str.length > 0 ? Either.right(str) : Either.left('Can`t be empty')
+const hasNumbers = str => /[0-9]/.test(str) ? Either.right(str) : Either.left('Must have numbers')
 
+valid('wrong zipcode').validate(isNotEmpty) // => Valid('wrong zipcode')
+valid('wrong zipcode').validate(hasNumbers) // => Invalid('wrong zipcode', ['Must have numbers'])
 ```
 
 #### - `validateAll(validators: ((t: T) => Either<E[], T>)[]): Validation<E, T>`
+Concatenates the errors returned by all failing validators (returning Left) and keeps the value of the last passing validator (returning Right), or the validation value if none.
 
 ```javascript
+const trim = str => Either.right(str.trim())
+const isNotEmpty = str => str.length > 0 ? Either.right(str) : Either.left('Can`t be empty')
+const hasNumbers = str => /[0-9]/.test(str) ? Either.right(str) : Either.left('Must have numbers')
 
+const validators = [trim, isNotEmpty, hasNumbers]
+
+Validation.of('123456').validateAll(validators) // => Valid('123456')
+Validation.of('123456 ').validateAll(validators) // => Valid('123456')
+Validation.of('wrong zipcode').validateAll(validators) // => Invalid(['Must have numbers'], 'wrong zipcode')
+Validation.of('   ').validateAll(validators) // => Invalid(['Can`t be empty', 'Must have numbers'], '')
 ```

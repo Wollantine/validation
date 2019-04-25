@@ -23,10 +23,12 @@ const trim = str => Either.right(str.trim())
 const isNotEmpty = str => str.length > 0 ? Either.right(str) : Either.left('Can`t be empty')
 const hasNumbers = str => /[0-9]/.test(str) ? Either.right(str) : Either.left('Must have numbers')
 
-Validation.of('123456').validateAll([isNotEmpty, hasNumbers]) // => Valid('123456')
-Validation.of('123456 ').validateAll([trim, isNotEmpty, hasNumbers]) // => Valid('123456')
-Validation.of('wrong zipcode').validateAll([isNotEmpty, hasNumbers]) // => Invalid(['Must have numbers'], 'wrong zipcode')
-Validation.of('   ').validateAll([trim, isNotEmpty, hasNumbers]) // => Invalid(['Can`t be empty', 'Must have numbers'], '')
+const validators = [trim, isNotEmpty, hasNumbers]
+
+Validation.of('123456').validateAll(validators) // => Valid('123456')
+Validation.of('123456 ').validateAll(validators) // => Valid('123456')
+Validation.of('wrong zipcode').validateAll(validators) // => Invalid(['Must have numbers'], 'wrong zipcode')
+Validation.of('   ').validateAll(validators) // => Invalid(['Can`t be empty', 'Must have numbers'], '')
 ```
 
 ## API
@@ -57,7 +59,7 @@ Returns an Invalid type. Throws if errors is an empty array.
 ```javascript
 import {Invalid} from 'validation'
 
-const v = new Invalid('', ['Empty value'])
+const i = new Invalid('', ['Empty value'])
 ```
 
 #### - `invalid(value: T, errors: E[]): Invalid<E, T>`
@@ -141,4 +143,65 @@ invalid('...', ['hello']).concat(invalid('test', ['world'])) // => Invalid('test
 
 // Unlike the other functions, the validation subject comes first, so the order feels natural
 concat(invalid('...', ['hello']), invalid('test', ['world'])) // => Invalid('test', ['hello', 'world'])
+```
+
+#### - `map(fn: T => U): Validation<E, U>`
+Applies a function to the value and returns a new validation equally valid or invalid (with the same errors).
+
+```javascript
+valid(42).map(x => x + 1) // => Valid(43)
+invalid(42, ['error']).map(x => x + 1) // => Invalid(43, ['error'])
+```
+
+#### - `ap(val: Validation<E, (t: T) => U>): Validation<E, U>`
+When passed a validation that contains a function as a value, applies that function to its value and returns a new validation with the concatenated errors of both.
+
+```javascript
+invalid(42, ['error']).ap(valid(x => x + 1)) // => Invalid(43, ['error'])
+invalid('test', ['hello']).ap(invalid(s => s.length, ['world'])) // => Invalid(4, ['hello', 'world'])
+```
+
+#### - `chain(fn: (t: T) => Validation<E, U>): Validation<E, U>`
+Applies a validation returning function to the value and returns a new validation with the concatenated errors of both this validation and the returned one, as well as the returned validation's value.
+
+```javascript
+valid('test').chain(str => invalid(str.length, ['error'])) // => Invalid(4, ['error'])
+invalid('', ['Has no numbers']).chain(
+    str => str.length === 0 ? invalid(str, ['Empty value']) : valid(str)
+) // => Invalid('', ['Has no numbers', 'Empty value'])
+```
+
+#### - `fold(fnValid: (t: T) => U, fnInvalid: (t: T, e: E[]) => U): U`
+If it is a Valid value, returns the result of applying fnValid to its value.
+If it is an Invalid value, returns the result of applying fnInvalid to its value and errors.
+
+```javascript
+invalid('test', ['contain-numbers']).fold(
+    v => `Value ${v} is OK!`,
+    (v, e) => `Value "${v}" has failed these validations: ${e}`
+) // => 'Value "test" has failed these validations: ["contain-numbers"]'
+```
+
+#### - `validateEither(either: Either<E[], T>): Validation<E, T>`
+
+```javascript
+
+```
+
+#### - `validateEitherList(eitherList: Either<E[], T>[]): Validation<E, T>`
+
+```javascript
+
+```
+
+#### - `validate(validator: (t: T) => Either<E[], T>): Validation<E, T>`
+
+```javascript
+
+```
+
+#### - `validateAll(validators: ((t: T) => Either<E[], T>)[]): Validation<E, T>`
+
+```javascript
+
 ```

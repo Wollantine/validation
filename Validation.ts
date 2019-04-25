@@ -219,14 +219,15 @@ export function ap<A, B, E>(
     valFn: Validation<E, (a: A) => B>,
     valA?: Validation<E, A>
 ): Validation<E, B> | ((valA: Validation<E, A>) => Validation<E, B>) {
-    const op = (v: Validation<E, A>) => (
-        v.isValid()
+    const op = (v: Validation<E, A>) => {
+        const shouldBeValid = valA.isValid() && valFn.isValid()
+        return shouldBeValid
             ? valid(valFn.value(v.value))
             : invalid(
                 valFn.value(v.value),
                 [...valFn.errorsOr([]), ...v.errorsOr([])]
             )
-    )
+    }
     return curry1(op, valA)
 }
 

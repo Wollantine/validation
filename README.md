@@ -190,8 +190,8 @@ If it is an Invalid value, returns the result of applying fnInvalid to its value
 ```javascript
 invalid('test', ['contain-numbers']).fold(
     (e, v) => `Value "${v}" has failed these validations: ${e}`,
-    v => `Value ${v} is OK!`,
-) // => 'Value "test" has failed these validations: ["contain-numbers"]'
+    v => `Value "${v}" is OK!`,
+) // => 'Value "test" has failed these validations: contain-numbers'
 ```
 
 It can be used to easily transform a Validation type into other types, like Maybe or Either:
@@ -215,7 +215,7 @@ If the either is a Left, concatenates the errors to their own.
 If the either is a Right, modifies the value.
 
 ```javascript
-valid(42).validateEither(Right(42)) // => Valid(42)
+valid(42).validateEither(Right(10)) // => Valid(10)
 valid('').validateEither(Left(['Empty value'])) // => Invalid('', ['Empty value'])
 ```
 

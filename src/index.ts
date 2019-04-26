@@ -228,7 +228,7 @@ export function ap<A, B, E>(
             ? valid(valFn.value(v.value))
             : invalid(
                 valFn.value(v.value),
-                [...valFn.errorsOr([]), ...v.errorsOr([])] as E[]
+                [...v.errorsOr([]), ...valFn.errorsOr([])] as E[]
             )
     }
     return curry1(op, valA)
@@ -277,7 +277,7 @@ export function validateEither<E, V>(
             errors => invalid(validation.value, errors) as Validation<E, V>,
             value => valid(value) as Validation<E, V>,
         )
-        return concat(newVal, validation)
+        return concat(validation, newVal)
     }
     return curry1(op, either)
 }

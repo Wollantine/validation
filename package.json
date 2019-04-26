@@ -14,7 +14,7 @@
     ]
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --require mochaConfig.js src/*.test.*"
   },
   "repository": {
     "type": "git",
@@ -34,8 +34,16 @@
   },
   "homepage": "https://github.com/kwirke/validation#readme",
   "devDependencies": {
+    "@babel/plugin-proposal-class-properties": "^7.4.0",
+    "@babel/preset-env": "^7.4.3",
+    "@babel/preset-typescript": "^7.3.3",
+    "@babel/register": "^7.4.0",
     "@pika/plugin-build-web": "^0.3.16",
     "@pika/plugin-ts-standard-pkg": "^0.3.16",
+    "@types/chai": "^4.1.7",
+    "@types/mocha": "^5.2.6",
+    "chai": "^4.2.0",
+    "mocha": "^6.1.4",
     "typescript": "^3.4.5"
   }
 }

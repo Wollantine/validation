@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+      "target": "es2018",
+      "module": "esnext",
+      "strict": true
+    },
+    "include": ["src/Validation.ts"],
+    "exclude": ["node_modules", "**/*.test.*"]
+  }
+  

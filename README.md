@@ -17,7 +17,7 @@ A value and an error can be whatever type you want: strings, booleans, and even 
 ## Example
 
 ```javascript
-import Validation from 'validation'
+import Validation from '@rexform/validation'
 
 const trim = str => Either.right(str.trim())
 const isNotEmpty = str => str.length > 0 ? Either.right(str) : Either.left('Can`t be empty')
@@ -39,7 +39,7 @@ Validation.of('   ').validateAll(validators) // => Invalid(['Can`t be empty', 'M
 Returns a Valid type.
 
 ```javascript
-import {Valid} from 'validation'
+import {Valid} from '@rexform/validation'
 
 const v = new Valid(42)
 ```
@@ -48,7 +48,7 @@ const v = new Valid(42)
 Returns a Valid type.
 
 ```javascript
-import {valid} from 'validation'
+import {valid} from '@rexform/validation'
 
 const v = valid(42)
 ```
@@ -57,7 +57,7 @@ const v = valid(42)
 Returns an Invalid type. Throws if errors is an empty array.
 
 ```javascript
-import {Invalid} from 'validation'
+import {Invalid} from '@rexform/validation'
 
 const i = new Invalid('', ['Empty value'])
 ```
@@ -66,7 +66,7 @@ const i = new Invalid('', ['Empty value'])
 Returns an Invalid type. Throws if errors is an empty array.
 
 ```javascript
-import {invalid} from 'validation'
+import {invalid} from '@rexform/validation'
 
 const i = invalid('', ['Empty value'])
 ```
@@ -75,7 +75,7 @@ const i = invalid('', ['Empty value'])
 If errors is empty or a nil value, returns a Valid type, otherwise returns an Invalid type with the errors.
 
 ```javascript
-import {of} from 'validation'
+import {of} from '@rexform/validation'
 
 const valid = of(42, [])
 const invalid = of('', ['Empty value'])
@@ -88,11 +88,23 @@ All these functions are available both as methods of Valid and Invalid types and
 Example:
 
 ```javascript
-import {valid, map} from 'validation'
+import {valid, map} from '@rexform/validation'
 
 // These are the same
 valid(42).map(x => x + 1)
 map(x => x + 1, valid(42))
+```
+
+They are also curried:
+```javascript
+import {map, chain, valid, invalid, validate} from '@rexform/validation'
+
+pipe(
+    map(x => x.trim()),
+    chain(x => containsNumbers(x) ? valid(x) : invalid(x, ['Must have numbers'])),
+    validate(x => isEmpty(x) ? Either.Left(['Is empty']) : Either.Right(x)),
+)(valid(' Validate me! '))
+// => Invalid(['Must have numbers'], 'Validate me!')
 ```
 
 **The types `Valid<T>` and `Invalid<T, E>` are assumed as the `this` in the following definitions.**
@@ -136,7 +148,7 @@ Therefore, if both validations are valid, it returns `v`.
 Note that the order of parameters is reversed from the other functions, to make it natural with the concatenation order.
 
 ```javascript
-import {concat} from 'validation'
+import {concat} from '@rexform/validation'
 
 valid('discarded value').concat(valid('new value')) // => Valid('new value')
 invalid('...', ['hello']).concat(invalid('test', ['world'])) // => Invalid('test', ['hello', 'world'])

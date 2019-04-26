@@ -1,0 +1,26 @@
+{
+  "name": "@rexform/validation",
+  "version": "1.0.0",
+  "description": "A monad for incremental validation without information loss.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://kwirke@github.com/kwirke/validation.git"
+  },
+  "keywords": [
+    "validation",
+    "monad",
+    "static-land",
+    "typescript",
+    "fp"
+  ],
+  "author": "Kwirke",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kwirke/validation/issues"
+  },
+  "homepage": "https://github.com/kwirke/validation#readme"
+}

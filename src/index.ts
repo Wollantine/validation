@@ -5,11 +5,12 @@ export enum Variant {
     Invalid = 'Invalid',
 }
 
-export interface Validation<E, A> {
+export interface ValidationShape<E, A> {
     readonly variant: Variant
     readonly value: A
+    readonly errors?: E[]
 
-    isValid: (this: Validation<E, A>) => this is Valid<A>
+    isValid: (this: Validation<E, A>) => this is Valid<E, A>
     isInvalid: (this: Validation<E, A>) => this is Invalid<E, A>
     errorsOr: <T>(this: Validation<E, A>, alt: T) => E[] | T
 
@@ -24,7 +25,9 @@ export interface Validation<E, A> {
     validateAll: (this: Validation<E, A>, validators: ((a: A) => Either<E[], A>)[]) => Validation<E, A>
 }
 
-export class Valid<V> implements Validation<never, V> {
+export type Validation<E, V> = Valid<unknown, V> | Invalid<E, V>
+
+export class Valid<E, V> implements ValidationShape<E, V> {
     readonly variant: Variant.Valid = Variant.Valid
 
     readonly value: V
@@ -33,36 +36,36 @@ export class Valid<V> implements Validation<never, V> {
         this.value = value
     }
 
-    isValid(): this is Valid<V> {
+    isValid(): this is Valid<E, V> {
         return true
     }
 
-    isInvalid(): this is Invalid<never, V> {
+    isInvalid(): this is Invalid<E, V> {
         return false
     }
 
-    errorsOr<T>(alt: T): never[] | T {
-        return errorsOr(alt, this) as T
+    errorsOr<T>(alt: T): E[] | T {
+        return alt
     }
 
-    concat<E, B>(val: Validation<E, B>): Validation<E, B> {
+    concat<B>(val: Validation<E, B>): Validation<E, B> {
         return concat(this as Validation<E, V>, val)
     }
 
-    map<B>(fn: (a: V) => B): Valid<B> {
-        return map(fn, this) as Valid<B>
+    map<B>(fn: (a: V) => B): Validation<E, B> {
+        return map(fn, this as Validation<E, V>)
     }
 
-    ap<E, B>(validation: Validation<E, (a: V) => B>): Validation<E, B> {
+    ap<B>(validation: Validation<E, (a: V) => B>): Validation<E, B> {
         return ap(validation, this as Validation<E, V>)
     }
 
-    chain<E, B>(fn: (a: V) => Validation<E, B>): Validation<E, B> {
+    chain<B>(fn: (a: V) => Validation<E, B>): Validation<E, B> {
         return chain(fn, this as Validation<E, V>)
     }
 
-    fold<E, B>(fnInvalid: (e: E[], a: V) => B, fnValid: (a: V) => B): B {
-        return fold(fnInvalid, fnValid, this)
+    fold<B>(fnInvalid: (e: E[], a: V) => B, fnValid: (a: V) => B): B {
+        return fold(fnInvalid, fnValid, this as Validation<E, V>)
     }
 
     validateEither<E>(either: Either<E[], V>): Validation<E, V> {
@@ -82,7 +85,7 @@ export class Valid<V> implements Validation<never, V> {
     }
 }
 
-export class Invalid<E, V> implements Validation<E, V> {
+export class Invalid<E, V> implements ValidationShape<E, V> {
     readonly variant: Variant.Invalid = Variant.Invalid
 
     readonly errors: E[]
@@ -96,7 +99,7 @@ export class Invalid<E, V> implements Validation<E, V> {
         this.value = value
     }
 
-    isValid(): this is Valid<V> {
+    isValid(): this is Valid<E, V> {
         return false
     }
 
@@ -145,7 +148,7 @@ export class Invalid<E, V> implements Validation<E, V> {
     }
 }
 
-export const valid = <V>(value: V): Valid<V> => (
+export const valid = <V>(value: V): Valid<unknown, V> => (
     new Valid(value)
 )
 
@@ -153,7 +156,7 @@ export const invalid = <e, v>(value: v, errors: e[]): Invalid<e, v> => (
     new Invalid(value, errors)
 )
 
-export function isValid<V>(validation: Validation<any, V>): validation is Valid<V> {
+export function isValid<E, V>(validation: Validation<any, V>): validation is Valid<unknown, V> {
     return validation.variant === Variant.Valid
 }
 
@@ -188,12 +191,12 @@ export function concat<E, A, B>(
     valB?: Validation<E, B>
 ): Validation<E, B> | ((valB: Validation<E, B>) => Validation<E, B>) {
     const op = (v: Validation<E, B>) => {
-        const shouldBeValid = valA.isValid() && valB.isValid()
+        const shouldBeValid = valA.isValid() && v.isValid()
         return shouldBeValid
-            ? valB
+            ? v
             : invalid(
-                valB.value,
-                [...valA.errorsOr([]), ...valB.errorsOr([])]
+                v.value,
+                [...valA.errorsOr([]), ...v.errorsOr([])] as E[]
             )
     }
     return curry1(op, valB)
@@ -204,7 +207,7 @@ export function map<A, B, E>(fn: (a: A) => B, validation: Validation<E, A>): Val
 export function map<A, B, E>(
     fn: (a: A) => B,
     validation?: Validation<E, A>
-): Validation<E, B> | ((validation?: Validation<E, A>) => Validation<E, B>) {
+): Validation<E, B> | ((validation: Validation<E, A>) => Validation<E, B>) {
     const op = (v: Validation<E, A>) => (
         v.isValid()
             ? valid(fn(v.value))
@@ -220,12 +223,12 @@ export function ap<A, B, E>(
     valA?: Validation<E, A>
 ): Validation<E, B> | ((valA: Validation<E, A>) => Validation<E, B>) {
     const op = (v: Validation<E, A>) => {
-        const shouldBeValid = valA.isValid() && valFn.isValid()
+        const shouldBeValid = v.isValid() && valFn.isValid()
         return shouldBeValid
             ? valid(valFn.value(v.value))
             : invalid(
                 valFn.value(v.value),
-                [...valFn.errorsOr([]), ...v.errorsOr([])]
+                [...valFn.errorsOr([]), ...v.errorsOr([])] as E[]
             )
     }
     return curry1(op, valA)
@@ -274,7 +277,7 @@ export function validateEither<E, V>(
             errors => invalid(validation.value, errors) as Validation<E, V>,
             value => valid(value) as Validation<E, V>,
         )
-        return validation.concat(newVal)
+        return concat(newVal, validation)
     }
     return curry1(op, either)
 }
@@ -286,7 +289,7 @@ export function validateEitherList<E, V>(
     eitherList?: Either<E[], V>[]
 ): Validation<E, V> | ((eitherList: Either<E[], V>[]) => Validation<E, V>) {
     const op = (el: Either<E[], V>[]): Validation<E, V> => (
-        el.reduce(validateEither, validation) as Validation<E, V>
+        el.reduce((v, e) => validateEither(v, e), validation) as Validation<E, V>
     )
     return curry1(op, eitherList)
 }

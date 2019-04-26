@@ -171,15 +171,22 @@ invalid('', ['Has no numbers']).chain(
 ) // => Invalid('', ['Has no numbers', 'Empty value'])
 ```
 
-#### - `fold(fnValid: (t: T) => U, fnInvalid: (t: T, e: E[]) => U): U`
+#### - `fold(fnInvalid: (e: E[], t: T, fnValid: (t: T) => U) => U): U`
 If it is a Valid value, returns the result of applying fnValid to its value.
 If it is an Invalid value, returns the result of applying fnInvalid to its value and errors.
 
 ```javascript
 invalid('test', ['contain-numbers']).fold(
+    (e, v) => `Value "${v}" has failed these validations: ${e}`,
     v => `Value ${v} is OK!`,
-    (v, e) => `Value "${v}" has failed these validations: ${e}`
 ) // => 'Value "test" has failed these validations: ["contain-numbers"]'
+```
+
+It can be used to easily transform a Validation type into other types, like Maybe or Either:
+```javascript
+const eitherFromValidation = validation.fold(Either.Left, Either.Right) // Either<E[], V>
+const maybeValidValue = validation.fold(Maybe.Nothing, Maybe.Just)      // Maybe<V>
+const maybeErrors = validation.fold(Maybe.Just, Maybe.Nothing)          // Maybe<E[]>
 ```
 
 ## Either adapters

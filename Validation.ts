@@ -17,7 +17,7 @@ export interface Validation<E, A> {
     map: <B>(this: Validation<E, A>, fn: (a: A) => B) => Validation<E, B>
     ap: <B>(this: Validation<E, A>, valAtoB: Validation<E, (a: A) => B>) => Validation<E, B>
     chain: <B>(this: Validation<E, A>, fn: (a: A) => Validation<E, B>) => Validation<E, B>
-    fold: <B>(this: Validation<E, A>, fnValid: (a: A) => B, fnInvalid: (a: A, e: E[]) => B) => B
+    fold: <B>(this: Validation<E, A>, fnInvalid: (e: E[], a: A) => B, fnValid: (a: A) => B) => B
     validateEither: (this: Validation<E, A>, either: Either<E[], A>) => Validation<E, A>
     validateEitherList: (this: Validation<E, A>, eitherList: Either<E[], A>[]) => Validation<E, A>
     validate: (this: Validation<E, A>, validator: (a: A) => Either<E[], A>) => Validation<E, A>
@@ -61,8 +61,8 @@ export class Valid<V> implements Validation<never, V> {
         return chain(fn, this as Validation<E, V>)
     }
 
-    fold<E, B>(fnValid: (a: V) => B, fnInvalid: (a: V, e: E[]) => B): B {
-        return fold(fnValid, fnInvalid, this)
+    fold<E, B>(fnInvalid: (e: E[], a: V) => B, fnValid: (a: V) => B): B {
+        return fold(fnInvalid, fnValid, this)
     }
 
     validateEither<E>(either: Either<E[], V>): Validation<E, V> {
@@ -124,8 +124,8 @@ export class Invalid<E, V> implements Validation<E, V> {
         return chain(fn, this)
     }
 
-    fold<B>(fnValid: (a: V) => B, fnInvalid: (a: V, e: E[]) => B): B {
-        return fold(fnValid, fnInvalid, this)
+    fold<B>(fnInvalid: (e: E[], a: V) => B, fnValid: (a: V) => B): B {
+        return fold(fnInvalid, fnValid, this)
     }
 
     validateEither(either: Either<E[], V>): Validation<E, V> {
@@ -244,17 +244,17 @@ export function chain<A, B, E>(
     return curry1(op, validation)
 }
 
-export function fold<A, E, B>(fnValid: (a: A) => B, fnInvalid: (a: A, e: E[]) => B): (validation: Validation<E, A>) => B
-export function fold<A, E, B>(fnValid: (a: A) => B, fnInvalid: (a: A, e: E[]) => B, validation: Validation<E, A>): B
+export function fold<A, E, B>(fnInvalid: (e: E[], a: A) => B, fnValid: (a: A) => B): (validation: Validation<E, A>) => B
+export function fold<A, E, B>(fnInvalid: (e: E[], a: A) => B, fnValid: (a: A) => B, validation: Validation<E, A>): B
 export function fold<A, E, B>(
+    fnInvalid: (e: E[], a: A) => B,
     fnValid: (a: A) => B,
-    fnInvalid: (a: A, e: E[]) => B,
     validation?: Validation<E, A>
 ):  B | ((validation: Validation<E, A>) => B) {
     const op = (v: Validation<E, A>) => (
         v.isValid()
             ? fnValid(v.value)
-            : fnInvalid(v.value, (v as Invalid<E, A>).errors)
+            : fnInvalid((v as Invalid<E, A>).errors, v.value)
     )
     return curry1(op, validation)
 }
@@ -272,7 +272,7 @@ export function validateEither<E, V>(
     const op = (e: Either<E[], V>) => {
         const newVal = e.fold(
             errors => invalid(validation.value, errors) as Validation<E, V>,
-            value => valid(value) as Validation<E, V>
+            value => valid(value) as Validation<E, V>,
         )
         return validation.concat(newVal)
     }
@@ -285,8 +285,8 @@ export function validateEitherList<E, V>(
     validation: Validation<E, V>,
     eitherList?: Either<E[], V>[]
 ): Validation<E, V> | ((eitherList: Either<E[], V>[]) => Validation<E, V>) {
-    const op = (el: Either<E[], V>[]) => (
-        el.reduce((v, e) => validateEither(v, e), validation)
+    const op = (el: Either<E[], V>[]): Validation<E, V> => (
+        el.reduce(validateEither, validation) as Validation<E, V>
     )
     return curry1(op, eitherList)
 }

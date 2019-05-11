@@ -154,13 +154,14 @@ describe('fold', () => {
     })
 })
 
+const Left = x => ({
+    fold: (leftFn, rightFn) => leftFn(x)
+})
+const Right = x => ({
+    fold: (leftFn, rightFn) => rightFn(x)
+})
+
 describe('validateEither', () => {
-    const Left = x => ({
-        fold: (leftFn, rightFn) => leftFn(x)
-    })
-    const Right = x => ({
-        fold: (leftFn, rightFn) => rightFn(x)
-    })
 
     it('should concatenate errors of Either.Left to a Valid', () => {
         const actual = valid('').validateEither(Left(['Empty value']))
@@ -180,5 +181,63 @@ describe('validateEither', () => {
     it('should keep the value of Either.Right in an Invalid', () => {
         const actual = invalid(42, ['error']).validateEither(Right(10))
         expect(actual).to.deep.equal(invalid(10, ['error']))
+    })
+})
+
+describe('validateEitherList', () => {
+    it('should keep a Valid when concatenating an empty list', () => {
+        const validation = valid(10)
+        const actual = validation.validateEitherList([])
+        expect(actual).to.deep.equal(validation)
+    })
+
+    it('should keep an Invalid when concatenating an empty list', () => {
+        const validation = invalid(10, ['Must have letters'])
+        const actual = validation.validateEitherList([])
+        expect(actual).to.deep.equal(validation)
+    })
+    
+    it('should concatenate errors of all the Either.Left to a Valid', () => {
+        const actual = valid('wrong zipcode').validateEitherList([
+            Left(['Must be one word']),
+            Right(''),
+            Left(['Must have numbers']),
+        ])
+        expect(actual.errorsOr([])).to.deep.equal(['Must be one word', 'Must have numbers'])
+    })
+    
+    it('should concatenate errors of all the Either.Left to an Invalid', () => {
+        const actual = invalid('wrong zipcode', ['Must have numbers']).validateEitherList([
+            Left(['Must be one word']),
+            Right(''),
+        ])
+        expect(actual.errorsOr([])).to.deep.equal(['Must have numbers', 'Must be one word'])
+    })
+    
+    it('should keep the value of the last Either.Right in a Valid', () => {
+        const actual = valid('wrong zipcode').validateEitherList([
+            Left(['Must be one word']),
+            Right(''),
+            Left(['Must have numbers']),
+            Right('10')
+        ])
+        expect(actual.value).to.equal('10')
+    })
+    
+    it('should keep the value of the last Either.Right in an Invalid', () => {
+        const actual = invalid('wrong zipcode', ['Must have numbers']).validateEitherList([
+            Left(['Must be one word']),
+            Right(''),
+            Right('10')
+        ])
+        expect(actual.value).to.equal('10')
+    })
+
+    it('should work with the example', () => {
+        const actual = valid('wrong zipcode').validateEitherList([
+            Left(['Must have numbers']),
+            Right(''),
+        ])
+        expect(actual).to.deep.equal(invalid('', ['Must have numbers']))
     })
 })

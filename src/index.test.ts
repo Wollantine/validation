@@ -241,3 +241,28 @@ describe('validateEitherList', () => {
         expect(actual).to.deep.equal(invalid('', ['Must have numbers']))
     })
 })
+
+describe('validate', () => {
+    const isNotEmpty = str => str.length > 0 ? Right(str) : Left('Can`t be empty')
+    const hasNumbers = str => /[0-9]/.test(str) ? Right(str) : Left('Must have numbers')
+
+    it('should validate a Valid with a Right validator as a Valid', () => {
+        const actual = valid('wrong zipcode').validate(isNotEmpty)
+        expect(actual).to.deep.equal(valid('wrong zipcode'))
+    })
+
+    it('should validate a Valid with a Left validator as an Invalid', () => {
+        const actual = valid('wrong zipcode').validate(hasNumbers)
+        expect(actual).to.deep.equal(invalid('wrong zipcode', ['Must have numbers']))
+    })
+
+    it('should validate an Invalid with a Right validator as an Invalid', () => {
+        const actual = invalid('wrong zipcode', ['Must have numbers']).validate(isNotEmpty)
+        expect(actual).to.deep.equal(invalid('wrong zipcode', ['Must have numbers']))
+    })
+
+    it('should validate an Invalid with a Left validator as an Invalid', () => {
+        const actual = invalid('', ['Can`t be empty']).validate(hasNumbers)
+        expect(actual).to.deep.equal(invalid('', ['Can`t be empty', 'Must have numbers']))
+    })
+})

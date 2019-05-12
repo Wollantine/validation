@@ -252,6 +252,6 @@ const validators = [trim, isNotEmpty, hasNumbers]
 
 Validation.of('123456').validateAll(validators) // => Valid('123456')
 Validation.of('123456 ').validateAll(validators) // => Valid('123456')
-Validation.of('wrong zipcode').validateAll(validators) // => Invalid(['Must have numbers'], 'wrong zipcode')
-Validation.of('   ').validateAll(validators) // => Invalid(['Can`t be empty', 'Must have numbers'], '')
+Validation.of('wrong zipcode').validateAll(validators) // => Invalid('wrong zipcode', ['Must have numbers'])
+Validation.of('   ').validateAll(validators) // => Invalid('', ['Can`t be empty', 'Must have numbers'])
 ```

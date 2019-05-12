@@ -266,3 +266,56 @@ describe('validate', () => {
         expect(actual).to.deep.equal(invalid('', ['Can`t be empty', 'Must have numbers']))
     })
 })
+
+describe('validateAll', () => {
+    const trim = str => Right(str.trim())    
+    const isNotEmpty = str => str.length > 0 ? Right(str) : Left('Can`t be empty')
+    const hasNumbers = str => /[0-9]/.test(str) ? Right(str) : Left('Must have numbers')
+
+    it('should keep a valid when validating an empty list', () => {
+        const actual = valid('10').validateAll([])
+        expect(actual).to.deep.equal(valid('10'))
+    })
+
+    it('should keep an invalid when concatenating an empty list', () => {
+        const actual = invalid('', ['Can`t be empty']).validateAll([])
+        expect(actual).to.deep.equal(invalid('', ['Can`t be empty']))
+    })
+
+    it('should keep a Valid when all validators are successful', () => {
+        const actual = valid('10').validateAll([isNotEmpty, hasNumbers])
+        expect(actual).to.deep.equal(valid('10'))
+    })
+
+    it('should concatenate errors of all failing validators to a Valid', () => {
+        const actual = valid('wrong zipcode').validateAll([isNotEmpty, hasNumbers])
+        expect(actual).to.deep.equal(invalid('wrong zipcode', ['Must have numbers']))
+    })
+
+    it('should concatenate errors of all failing validators to an Invalid', () => {
+        const actual = invalid('', ['Must have numbers']).validateAll([isNotEmpty, hasNumbers])
+        expect(actual).to.deep.equal(invalid('', ['Must have numbers', 'Can`t be empty', 'Must have numbers']))
+    })
+
+    it('should keep the value of the last successful validator in a Valid', () => {
+        const actual = valid(' hi ').validateAll([trim, hasNumbers])
+        expect(actual).to.deep.equal(invalid('hi', ['Must have numbers']))
+    })
+
+    it('should keep the value of the last successful validator in an Invalid', () => {
+        const actual = invalid('  ', ['Must have numbers']).validateAll([trim, isNotEmpty])
+        expect(actual).to.deep.equal(invalid('', ['Must have numbers', 'Can`t be empty']))
+    })
+
+    it('should work with the examples', () => {
+        const validators = [trim, isNotEmpty, hasNumbers]
+        expect(Validation.of('123456').validateAll(validators))
+            .to.deep.equal(valid('123456'))
+        expect(Validation.of('123456 ').validateAll(validators))
+            .to.deep.equal(valid('123456'))
+        expect(Validation.of('wrong zipcode').validateAll(validators))
+            .to.deep.equal(invalid('wrong zipcode', ['Must have numbers']))
+        expect(Validation.of('   ').validateAll(validators))
+            .to.deep.equal(invalid('', ['Can`t be empty', 'Must have numbers']))
+    })
+})

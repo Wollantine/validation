@@ -1,21 +1,11 @@
 {
   "name": "@rexform/validation",
   "version": "1.0.0",
+  "main": "dist/index.js",
+  "umd:main": "dist/rexformvalidation.umd.production.js",
+  "module": "dist/rexformvalidation.es.production.js",
+  "typings": "dist/index.d.ts",
   "description": "A monad for incremental validation without information loss.",
-  "main": "Validation.ts",
-  "@pika/pack": {
-    "pipeline": [
-      [
-        "@pika/plugin-ts-standard-pkg"
-      ],
-      [
-        "@pika/plugin-build-web"
-      ]
-    ]
-  },
-  "scripts": {
-    "test": "mocha --require mochaConfig.js src/*.test.*"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://kwirke@github.com/kwirke/validation.git"
@@ -33,17 +23,33 @@
     "url": "https://github.com/kwirke/validation/issues"
   },
   "homepage": "https://github.com/kwirke/validation#readme",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "start": "tsdx watch",
+    "build": "tsdx build",
+    "test": "tsdx test"
+  },
+  "peerDependencies": {},
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
+  },
+  "prettier": {
+    "printWidth": 80,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
   "devDependencies": {
-    "@babel/plugin-proposal-class-properties": "^7.4.0",
-    "@babel/preset-env": "^7.4.3",
-    "@babel/preset-typescript": "^7.3.3",
-    "@babel/register": "^7.4.0",
-    "@pika/plugin-build-web": "^0.3.16",
-    "@pika/plugin-ts-standard-pkg": "^0.3.16",
-    "@types/chai": "^4.1.7",
-    "@types/mocha": "^5.2.6",
-    "chai": "^4.2.0",
-    "mocha": "^6.1.4",
+    "@types/jest": "^24.0.12",
+    "husky": "^2.2.0",
+    "prettier": "^1.17.0",
+    "pretty-quick": "^1.10.0",
+    "tsdx": "^0.5.9",
+    "tslib": "^1.9.3",
     "typescript": "^3.4.5"
   }
 }

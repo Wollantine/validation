@@ -25,7 +25,7 @@ export interface ValidationShape<E, A> {
     validateAll: (this: Validation<E, A>, validators: ((a: A) => Either<E | E[], A>)[]) => Validation<E, A>
 }
 
-export type Validation<E, V> = Valid<unknown, V> | Invalid<E, V>
+export type Validation<E, V> = Valid<any, V> | Invalid<E, V>
 
 export class Valid<E, V> implements ValidationShape<E, V> {
     readonly variant: Variant.Valid = Variant.Valid
@@ -148,7 +148,7 @@ export class Invalid<E, V> implements ValidationShape<E, V> {
     }
 }
 
-export const valid = <V>(value: V): Valid<unknown, V> => (
+export const valid = <V>(value: V): Valid<any, V> => (
     new Valid(value)
 )
 
@@ -156,7 +156,7 @@ export const invalid = <e, v>(value: v, errors: e[]): Invalid<e, v> => (
     new Invalid(value, errors)
 )
 
-export function isValid<E, V>(validation: Validation<any, V>): validation is Valid<unknown, V> {
+export function isValid<E, V>(validation: Validation<any, V>): validation is Valid<any, V> {
     return validation.variant === Variant.Valid
 }
 

@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/kwirke/validation.svg?branch=master)](https://travis-ci.org/kwirke/validation)
+[![codecov](https://codecov.io/gh/kwirke/validation/branch/master/graph/badge.svg)](https://codecov.io/gh/kwirke/validation)
+
 # validation
 Validation is a [Static Land](https://github.com/rpominov/static-land) compatible monad and ADT (Algebraic Data Type) designed to store immutable validation results while not losing any validation errors nor the validated value.
 

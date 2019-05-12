@@ -1,4 +1,4 @@
-import { curry1 } from './utils';
+import { curry1, arrayOrItemToArray } from './utils';
 
 export enum Variant {
     Valid = 'Valid',
@@ -19,10 +19,10 @@ export interface ValidationShape<E, A> {
     ap: <B>(this: Validation<E, A>, valAtoB: Validation<E, (a: A) => B>) => Validation<E, B>
     chain: <B>(this: Validation<E, A>, fn: (a: A) => Validation<E, B>) => Validation<E, B>
     fold: <B>(this: Validation<E, A>, fnInvalid: (e: E[], a: A) => B, fnValid: (a: A) => B) => B
-    validateEither: (this: Validation<E, A>, either: Either<E[], A>) => Validation<E, A>
-    validateEitherList: (this: Validation<E, A>, eitherList: Either<E[], A>[]) => Validation<E, A>
-    validate: (this: Validation<E, A>, validator: (a: A) => Either<E[], A>) => Validation<E, A>
-    validateAll: (this: Validation<E, A>, validators: ((a: A) => Either<E[], A>)[]) => Validation<E, A>
+    validateEither: (this: Validation<E, A>, either: Either<E | E[], A>) => Validation<E, A>
+    validateEitherList: (this: Validation<E, A>, eitherList: Either<E | E[], A>[]) => Validation<E, A>
+    validate: (this: Validation<E, A>, validator: (a: A) => Either<E | E[], A>) => Validation<E, A>
+    validateAll: (this: Validation<E, A>, validators: ((a: A) => Either<E | E[], A>)[]) => Validation<E, A>
 }
 
 export type Validation<E, V> = Valid<unknown, V> | Invalid<E, V>
@@ -68,19 +68,19 @@ export class Valid<E, V> implements ValidationShape<E, V> {
         return fold(fnInvalid, fnValid, this as Validation<E, V>)
     }
 
-    validateEither<E>(either: Either<E[], V>): Validation<E, V> {
+    validateEither<E>(either: Either<E | E[], V>): Validation<E, V> {
         return validateEither(this as Validation<E, V>, either)
     }
 
-    validateEitherList<E>(eitherList: Either<E[], V>[]): Validation<E, V> {
+    validateEitherList<E>(eitherList: Either<E | E[], V>[]): Validation<E, V> {
         return validateEitherList(this as Validation<E, V>, eitherList)
     }
 
-    validate<E>(validator: (a: V) => Either<E[], V>): Validation<E, V> {
+    validate<E>(validator: (a: V) => Either<E | E[], V>): Validation<E, V> {
         return validate(this as Validation<E, V>, validator)
     }
 
-    validateAll<E>(validators: ((a: V) => Either<E[], V>)[]): Validation<E, V> {
+    validateAll<E>(validators: ((a: V) => Either<E | E[], V>)[]): Validation<E, V> {
         return validateAll(this as Validation<E, V>, validators)
     }
 }
@@ -131,19 +131,19 @@ export class Invalid<E, V> implements ValidationShape<E, V> {
         return fold(fnInvalid, fnValid, this)
     }
 
-    validateEither(either: Either<E[], V>): Validation<E, V> {
+    validateEither(either: Either<E | E[], V>): Validation<E, V> {
         return validateEither(this, either)
     }
 
-    validateEitherList(eitherList: Either<E[], V>[]): Validation<E, V> {
+    validateEitherList(eitherList: Either<E | E[], V>[]): Validation<E, V> {
         return validateEitherList(this, eitherList)
     }
 
-    validate(validator: (a: V) => Either<E[], V>): Validation<E, V> {
+    validate(validator: (a: V) => Either<E | E[], V>): Validation<E, V> {
         return validate(this, validator)
     }
 
-    validateAll(validators: ((a: V) => Either<E[], V>)[]): Validation<E, V> {
+    validateAll(validators: ((a: V) => Either<E | E[], V>)[]): Validation<E, V> {
         return validateAll(this, validators)
     }
 }
@@ -266,15 +266,15 @@ export type Either<T, U> = {
     fold: <A>(this: Either<T, U>, left: (t: T) => A, right: (u: U) => A) => A
 }
 
-export function validateEither<E, V>(validation: Validation<E, V>): (either: Either<E[], V>) => Validation<E, V>
-export function validateEither<E, V>(validation: Validation<E, V>, either: Either<E[], V>): Validation<E, V>
+export function validateEither<E, V>(validation: Validation<E, V>): (either: Either<E | E[], V>) => Validation<E, V>
+export function validateEither<E, V>(validation: Validation<E, V>, either: Either<E | E[], V>): Validation<E, V>
 export function validateEither<E, V>(
     validation: Validation<E, V>,
-    either?: Either<E[], V>
-): Validation<E, V> | ((either: Either<E[], V>) => Validation<E, V>) {
-    const op = (e: Either<E[], V>) => {
+    either?: Either<E | E[], V>
+): Validation<E, V> | ((either: Either<E | E[], V>) => Validation<E, V>) {
+    const op = (e: Either<E | E[], V>) => {
         const newVal = e.fold(
-            errors => invalid(validation.value, errors) as Validation<E, V>,
+            errors => invalid(validation.value, arrayOrItemToArray(errors)) as Validation<E, V>,
             value => valid(value) as Validation<E, V>,
         )
         return concat(validation, newVal)
@@ -282,37 +282,37 @@ export function validateEither<E, V>(
     return curry1(op, either)
 }
 
-export function validateEitherList<E, V>(validation: Validation<E, V>): (eitherList: Either<E[], V>[]) => Validation<E, V>
-export function validateEitherList<E, V>(validation: Validation<E, V>, eitherList: Either<E[], V>[]): Validation<E, V>
+export function validateEitherList<E, V>(validation: Validation<E, V>): (eitherList: Either<E | E[], V>[]) => Validation<E, V>
+export function validateEitherList<E, V>(validation: Validation<E, V>, eitherList: Either<E | E[], V>[]): Validation<E, V>
 export function validateEitherList<E, V>(
     validation: Validation<E, V>,
-    eitherList?: Either<E[], V>[]
-): Validation<E, V> | ((eitherList: Either<E[], V>[]) => Validation<E, V>) {
-    const op = (el: Either<E[], V>[]): Validation<E, V> => (
+    eitherList?: Either<E | E[], V>[]
+): Validation<E, V> | ((eitherList: Either<E | E[], V>[]) => Validation<E, V>) {
+    const op = (el: Either<E | E[], V>[]): Validation<E, V> => (
         el.reduce((v, e) => validateEither(v, e), validation) as Validation<E, V>
     )
     return curry1(op, eitherList)
 }
 
-export function validate<E, V>(validation: Validation<E, V>): (validator: (a: V) => Either<E[], V>) => Validation<E, V>
-export function validate<E, V>(validation: Validation<E, V>, validator: (a: V) => Either<E[], V>): Validation<E, V>
+export function validate<E, V>(validation: Validation<E, V>): (validator: (a: V) => Either<E | E[], V>) => Validation<E, V>
+export function validate<E, V>(validation: Validation<E, V>, validator: (a: V) => Either<E | E[], V>): Validation<E, V>
 export function validate<E, V>(
     validation: Validation<E, V>,
-    validator?: (a: V) => Either<E[], V>
-): Validation<E, V> | ((validator: (a: V) => Either<E[], V>) => Validation<E, V>) {
-    const op = (v: (a: V) => Either<E[], V>) => (
+    validator?: (a: V) => Either<E | E[], V>
+): Validation<E, V> | ((validator: (a: V) => Either<E | E[], V>) => Validation<E, V>) {
+    const op = (v: (a: V) => Either<E | E[], V>) => (
         validateEither(validation, v(validation.value))
     )
     return curry1(op, validator)
 }
 
-export function validateAll<E, V>(validation: Validation<E, V>): (validators: ((a: V) => Either<E[], V>)[]) => Validation<E, V>
-export function validateAll<E, V>(validation: Validation<E, V>, validators: ((a: V) => Either<E[], V>)[]): Validation<E, V>
+export function validateAll<E, V>(validation: Validation<E, V>): (validators: ((a: V) => Either<E | E[], V>)[]) => Validation<E, V>
+export function validateAll<E, V>(validation: Validation<E, V>, validators: ((a: V) => Either<E | E[], V>)[]): Validation<E, V>
 export function validateAll<E, V>(
     validation: Validation<E, V>,
-    validators?: ((a: V) => Either<E[], V>)[]
-): Validation<E, V> | ((validators: ((a: V) => Either<E[], V>)[]) => Validation<E, V>) {
-    const op = (vl: ((a: V) => Either<E[], V>)[]) => (
+    validators?: ((a: V) => Either<E | E[], V>)[]
+): Validation<E, V> | ((validators: ((a: V) => Either<E | E[], V>)[]) => Validation<E, V>) {
+    const op = (vl: ((a: V) => Either<E | E[], V>)[]) => (
         vl.reduce((v, f) => validate(v, f), validation)
     )
     return curry1(op, validators)

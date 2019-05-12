@@ -6,3 +6,7 @@ export const curry1 = <T, U>(
         ? (a2: T) => fn(a2)
         : fn(a)
 )
+
+export const arrayOrItemToArray = <T>(x: T | T[]): T[] => (
+    ([] as T[]).concat(x)
+)

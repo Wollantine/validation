@@ -204,9 +204,9 @@ export const of = <e, v>(
   return errors && errors.length > 0 ? invalid(value, errors) : valid(value);
 };
 
-export function errorsOr<E, T>(
+export function errorsOr<T>(
   alt: T
-): (validation: Validation<E, any>) => E[] | T;
+): <E>(validation: Validation<E, any>) => E[] | T;
 export function errorsOr<E, T>(alt: T, validation: Validation<E, any>): E[] | T;
 export function errorsOr<E, T>(
   alt: T,
@@ -217,9 +217,9 @@ export function errorsOr<E, T>(
   return curry1(op, validation);
 }
 
-export function concat<E, A, B>(
+export function concat<E, A>(
   valA: Validation<E, A>
-): (valB: Validation<E, B>) => Validation<E, B>;
+): <B>(valB: Validation<E, B>) => Validation<E, B>;
 export function concat<E, A, B>(
   valA: Validation<E, A>,
   valB: Validation<E, B>
@@ -234,12 +234,12 @@ export function concat<E, A, B>(
       ? v
       : invalid(v.value, [...valA.errorsOr([]), ...v.errorsOr([])] as E[]);
   };
-  return curry1(op, valB) as <T>(v: Validation<E, T>) => Validation<E, T>;
+  return curry1(op, valB);
 }
 
-export function map<A, B, E>(
+export function map<A, B>(
   fn: (a: A) => B
-): (validation: Validation<E, A>) => Validation<E, B>;
+): <E>(validation: Validation<E, A>) => Validation<E, B>;
 export function map<A, B, E>(
   fn: (a: A) => B,
   validation: Validation<E, A>

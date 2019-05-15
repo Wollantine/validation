@@ -1,7 +1,9 @@
 import Validation, {
   valid,
   invalid,
+  errorsOr,
   concat,
+  map,
   of,
   isValid,
   isInvalid,
@@ -112,6 +114,16 @@ describe('errorsOr', () => {
     const actual = invalid('', ['Empty value']).errorsOr([]);
     expect(actual).toEqual(['Empty value']);
   });
+
+  it('should curry with a Valid', () => {
+    const errorsOrEmptyArray = errorsOr([]);
+    expect(errorsOrEmptyArray(valid(10))).toEqual([]);
+  });
+
+  it('should curry with an Invalid', () => {
+    const errorsOrEmptyArray = errorsOr([]);
+    expect(errorsOrEmptyArray(invalid(10, ['test']))).toEqual(['test']);
+  });
 });
 
 describe('concat', () => {
@@ -142,6 +154,13 @@ describe('concat', () => {
     );
     expect(actual).toEqual(invalid('test', ['hello', 'world']));
   });
+
+  it('should curry in the right order', () => {
+    const concatInvalid = concat(invalid(10, ['hello']));
+    expect(concatInvalid(invalid(12, ['world']))).toEqual(
+      invalid(12, ['hello', 'world'])
+    );
+  });
 });
 
 describe('map', () => {
@@ -153,6 +172,16 @@ describe('map', () => {
   it('should modify the value of an Invalid', () => {
     const actual = invalid(42, ['error']).map(x => x + 1);
     expect(actual).toEqual(invalid(43, ['error']));
+  });
+
+  it('should curry with Valid', () => {
+    const mapToLength = map((x: string) => x.length);
+    expect(mapToLength(valid('test'))).toEqual(valid(4));
+  });
+
+  it('should curry with Invalid', () => {
+    const mapToLength = map((x: string) => x.length);
+    expect(mapToLength(invalid('test', ['hi']))).toEqual(invalid(4, ['hi']));
   });
 });
 

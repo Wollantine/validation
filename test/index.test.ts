@@ -1,10 +1,24 @@
-import Validation, { valid, invalid, concat, of } from '../src/index';
+import Validation, {
+  valid,
+  invalid,
+  concat,
+  of,
+  isValid,
+  isInvalid,
+} from '../src/index';
 
 describe('Readme examples', () => {
   it('should behave the same with methods and functions', () => {
     const a = Validation.valid(42).map(x => x + 1);
     const b = Validation.map(x => x + 1, Validation.valid(42));
     expect(a).toEqual(b);
+  });
+});
+
+describe('invalid', () => {
+  it('should throw when trying to create an Invalid with no errors', () => {
+    const actual = () => invalid(10, []);
+    expect(actual).toThrow();
   });
 });
 
@@ -26,6 +40,10 @@ describe('of', () => {
     const validation = invalid(10, ['hi']);
     expect(of(validation)).toEqual(validation);
   });
+
+  it('should return a valid when passing an empty array of errors', () => {
+    expect(of(10, [])).toEqual(valid(10));
+  });
 });
 
 describe('isValid', () => {
@@ -38,6 +56,16 @@ describe('isValid', () => {
     const actual = invalid('', ['Empty value']).isValid();
     expect(actual).toBe(false);
   });
+
+  it('should be true when called as a method with a Valid', () => {
+    const actual = isValid(valid(10));
+    expect(actual).toBe(true);
+  });
+
+  it('should be false when called as a method with an Invalid', () => {
+    const actual = isValid(invalid('hi', ['error']));
+    expect(actual).toBe(false);
+  });
 });
 
 describe('isInvalid', () => {
@@ -48,6 +76,16 @@ describe('isInvalid', () => {
 
   it('should be true for Invalid', () => {
     const actual = invalid('', ['Empty value']).isInvalid();
+    expect(actual).toBe(true);
+  });
+
+  it('should be false when called as a method with a Valid', () => {
+    const actual = isInvalid(valid('test'));
+    expect(actual).toBe(false);
+  });
+
+  it('should be true when called as a method with an Invalid', () => {
+    const actual = isInvalid(invalid('test', ['error']));
     expect(actual).toBe(true);
   });
 });

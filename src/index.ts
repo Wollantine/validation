@@ -234,7 +234,7 @@ export function concat<E, A, B>(
       ? v
       : invalid(v.value, [...valA.errorsOr([]), ...v.errorsOr([])] as E[]);
   };
-  return curry1(op, valB);
+  return curry1(op, valB) as <T>(v: Validation<E, T>) => Validation<E, T>;
 }
 
 export function map<A, B, E>(

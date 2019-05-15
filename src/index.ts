@@ -74,7 +74,7 @@ export class Valid<E, V> implements ValidationShape<E, V> {
   }
 
   concat<B>(val: Validation<E, B>): Validation<E, B> {
-    return concat(this as Validation<E, V>, val);
+    return concat(val, this);
   }
 
   map<B>(fn: (a: V) => B): Validation<E, B> {
@@ -141,7 +141,7 @@ export class Invalid<E, V> implements ValidationShape<E, V> {
   }
 
   concat<B>(val: Validation<E, B>): Validation<E, B> {
-    return concat(this, val);
+    return concat(val, this);
   }
 
   map<B>(fn: (a: V) => B): Invalid<E, B> {
@@ -217,24 +217,24 @@ export function errorsOr<E, T>(
   return curry1(op, validation);
 }
 
-export function concat<E, A>(
-  valA: Validation<E, A>
-): <B>(valB: Validation<E, B>) => Validation<E, B>;
-export function concat<E, A, B>(
-  valA: Validation<E, A>,
+export function concat<E, B>(
   valB: Validation<E, B>
+): (valA: Validation<E, any>) => Validation<E, B>;
+export function concat<E, B>(
+  valB: Validation<E, B>,
+  valA: Validation<E, any>
 ): Validation<E, B>;
-export function concat<E, A, B>(
-  valA: Validation<E, A>,
-  valB?: Validation<E, B>
-): Validation<E, B> | ((valB: Validation<E, B>) => Validation<E, B>) {
-  const op = (v: Validation<E, B>) => {
-    const shouldBeValid = valA.isValid() && v.isValid();
+export function concat<E, B>(
+  valB: Validation<E, B>,
+  valA?: Validation<E, any>
+): Validation<E, B> | ((valA: Validation<E, any>) => Validation<E, B>) {
+  const op = (v: Validation<E, any>) => {
+    const shouldBeValid = valB.isValid() && v.isValid();
     return shouldBeValid
-      ? v
-      : invalid(v.value, [...valA.errorsOr([]), ...v.errorsOr([])] as E[]);
+      ? valB
+      : invalid(valB.value, [...v.errorsOr([]), ...valB.errorsOr([])] as E[]);
   };
-  return curry1(op, valB);
+  return curry1(op, valA);
 }
 
 export function map<A, B>(
@@ -291,7 +291,7 @@ export function chain<A, B, E>(
 ): Validation<E, B> | ((validation: Validation<E, A>) => Validation<E, B>) {
   const op = (v: Validation<E, A>) => {
     const newValidation = fn(v.value);
-    return concat(v, newValidation);
+    return concat(newValidation, v);
   };
   return curry1(op, validation);
 }
@@ -341,7 +341,7 @@ export function validateEither<E, V>(
         >,
       value => valid(value) as Validation<E, V>
     );
-    return concat(validation, newVal);
+    return concat(newVal, validation);
   };
   return curry1(op, either);
 }

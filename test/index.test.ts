@@ -149,16 +149,16 @@ describe('concat', () => {
 
   it('should have the correct order in the function style', () => {
     const actual = concat(
-      invalid('...', ['hello']),
-      invalid('test', ['world'])
+      invalid('test', ['world']),
+      invalid('...', ['hello'])
     );
     expect(actual).toEqual(invalid('test', ['hello', 'world']));
   });
 
   it('should curry in the right order', () => {
-    const concatInvalid = concat(invalid(10, ['hello']));
-    expect(concatInvalid(invalid(12, ['world']))).toEqual(
-      invalid(12, ['hello', 'world'])
+    const concatWorld = concat(invalid(10, ['world']));
+    expect(concatWorld(invalid(12, ['hello']))).toEqual(
+      invalid(10, ['hello', 'world'])
     );
   });
 });

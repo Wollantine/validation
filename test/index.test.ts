@@ -22,6 +22,16 @@ describe('invalid', () => {
     const actual = () => invalid(10, []);
     expect(actual).toThrow();
   });
+
+  it('should accept non-array errors as a single element errors array', () => {
+    const actual = invalid(10, 'error')
+    expect(actual).toEqual(invalid(10, ['error']))
+  })
+
+  it('should be curried', () => {
+    const actual = invalid(10);
+    expect(actual('error')).toEqual(invalid(10, ['error']))
+  })
 });
 
 describe('of', () => {

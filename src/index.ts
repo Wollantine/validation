@@ -179,8 +179,14 @@ export class Invalid<E, V> implements ValidationShape<E, V> {
 
 export const valid = <V>(value: V): Valid<any, V> => new Valid(value);
 
-export const invalid = <e, v>(value: v, errors: e[]): Invalid<e, v> =>
-  new Invalid(value, errors);
+export function invalid<E, V>(value: V): (errors: E | E[]) => Invalid<E, V>;
+export function invalid<E, V>(value: V, errors: E | E[]): Invalid<E, V>;
+export function invalid<E, V>(value: V, errors?: E | E[]): ((errors: E | E[]) => Invalid<E, V>) | Invalid<E, V> {
+  const op = (errors2: E | E[]) => (
+    new Invalid(value, ([] as E[]).concat(errors2))
+  )
+  return curry1(op, errors)
+}
 
 export function isValid<E, V>(
   validation: Validation<any, V>

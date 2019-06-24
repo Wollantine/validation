@@ -71,14 +71,15 @@ import { Invalid } from '@rexform/validation';
 const i = new Invalid('', ['Empty value']);
 ```
 
-#### - `invalid(value: T, errors: E[]): Invalid<E, T>`
+#### - `invalid(value: T, errors: E | E[]): Invalid<E, T>`
 
-Returns an Invalid type. Throws if errors is an empty array.
+Returns an Invalid type. Throws if errors is an empty array. It is curried, and casts the error to an array if it is not.
 
 ```javascript
 import { invalid } from '@rexform/validation';
 
 const i = invalid('', ['Empty value']);
+const i = invalid('')('Empty value');
 ```
 
 #### - `of(value: T, errors?: E[]): Validation<E, T>`

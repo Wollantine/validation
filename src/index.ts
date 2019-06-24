@@ -19,6 +19,8 @@ export interface ValidationShape<E, A> {
     val: Validation<E, B>
   ) => Validation<E, B>;
   map: <B>(this: Validation<E, A>, fn: (a: A) => B) => Validation<E, B>;
+  mapErrors: <B>(this: Validation<E, A>, fn: (e: E[]) => B | B[]) => Validation<B, A>;
+  mapError: <B>(this: Validation<E, A>, fn: (e: E) => B) => Validation<B, A>;
   ap: <B>(
     this: Validation<E, A>,
     valAtoB: Validation<E, (a: A) => B>
@@ -79,6 +81,14 @@ export class Valid<E, V> implements ValidationShape<E, V> {
 
   map<B>(fn: (a: V) => B): Validation<E, B> {
     return map(fn, this as Validation<E, V>);
+  }
+
+  mapErrors<B>(fn: (e: E[]) => B | B[]): Validation<B, V> {
+    return mapErrors(fn, this)
+  }
+
+  mapError<B>(fn: (e: E) => B): Validation<B, V> {
+    return mapError(fn, this)
   }
 
   ap<B>(validation: Validation<E, (a: V) => B>): Validation<E, B> {
@@ -146,6 +156,14 @@ export class Invalid<E, V> implements ValidationShape<E, V> {
 
   map<B>(fn: (a: V) => B): Invalid<E, B> {
     return map(fn, this) as Invalid<E, B>;
+  }
+
+  mapErrors<B>(fn: (e: E[]) => B | B[]): Validation<B, V> {
+    return mapErrors(fn, this)
+  }
+
+  mapError<B>(fn: (e: E) => B): Validation<B, V> {
+    return mapError(fn, this)
   }
 
   ap<B>(validation: Validation<E, (a: V) => B>): Validation<E, B> {
@@ -277,6 +295,30 @@ export function map<A, B, E>(
       ? valid(fn(v.value))
       : invalid(fn(v.value), (v as Invalid<E, A>).errors);
   return curry1(op, validation);
+}
+
+export function mapErrors<E, E2, V>(m: (errors: E[]) => E2 | E2[], v: Validation<E, V>): Validation<E2, V>;
+export function mapErrors<E, E2, V>(m: (errors: E[]) => E2 | E2[]): (v: Validation<E, V>) => Validation<E2, V>;
+export function mapErrors<E, E2, V>(
+  mappingFn: (errors: E[]) => E2 | E2[],
+  validation?: Validation<E, V>
+): Validation<E2, V> | ((v: Validation<E, V>) => Validation<E2, V>) {
+  const op = (validation2: Validation<E, V>) => validation2.isValid()
+    ? validation2
+    : invalid(validation2.value, mappingFn(validation2.errorsOr([])));
+  return curry1(op, validation);
+};
+
+export function mapError<E, E2, V>(m: (error: E) => E2, v: Validation<E, V>): Validation<E2, V>;
+export function mapError<E, E2, V>(m: (error: E) => E2): (v: Validation<E, V>) => Validation<E2, V>;
+export function mapError<E, E2, V>(
+  mappingFn: (error: E) => E2,
+  validation?: Validation<E, V>
+): Validation<E2, V> | ((v: Validation<E, V>) => Validation<E2, V>) {
+  const op = (validation2: Validation<E, V>) => (
+    mapErrors(errors => errors.map(mappingFn), validation2)
+  )
+  return curry1(op, validation)
 }
 
 export function ap<A, B, E>(
@@ -431,9 +473,12 @@ export const Validation = {
   isValid,
   isInvalid,
   of,
+  fromEither,
   errorsOr,
   concat,
   map,
+  mapErrors,
+  mapError,
   ap,
   chain,
   fold,

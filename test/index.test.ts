@@ -8,6 +8,8 @@ import Validation, {
   isValid,
   isInvalid,
   fromEither,
+  mapErrors,
+  mapError,
 } from '../src/index';
 
 const Left = (x: any) => ({
@@ -222,6 +224,49 @@ describe('map', () => {
   it('should curry with Invalid', () => {
     const mapToLength = map((x: string) => x.length);
     expect(mapToLength(invalid('test', ['hi']))).toEqual(invalid(4, ['hi']));
+  });
+});
+
+describe('mapErrors', () => {
+  it('should be an identity function on a Valid type', () => {
+    const v = valid(10);
+    const actual = mapErrors(errors => ['error'], v);
+    expect(actual).toEqual(v);
+  });
+
+  it('should map all errors in an Invalid type with mappingFn', () => {
+    const inv = invalid(3, ['Invalid address', 'Missing number']);
+    const actual = mapErrors(e => e[0], inv);
+    const expected = invalid(3, ['Invalid address']);
+    expect(actual).toEqual(expected);
+  });
+
+  it('should cast result to an array', () => {
+    const actual = mapErrors(() => 'error2', invalid(3, ['error']));
+    expect(actual).toEqual(invalid(3, ['error2']));
+  });
+
+  it('should throw when mapping to an empty array', () => {
+    const actual = () => mapErrors(() => [], invalid(3, ['error']));
+    expect(actual).toThrow();
+  });
+});
+
+describe('mapError', () => {
+  it('should be an identity function on a Valid type', () => {
+    const v = valid(10);
+    const actual = mapError(e => 'Error: ' + e, v);
+    expect(actual).toEqual(v);
+  });
+
+  it('should map each error in an Invalid type with mappingFn', () => {
+    const inv = invalid(3, ['Invalid address', 'Missing number']);
+    const actual = mapError(e => 'Error: ' + e, inv);
+    const expected = invalid(3, [
+      'Error: Invalid address',
+      'Error: Missing number',
+    ]);
+    expect(actual).toEqual(expected);
   });
 });
 

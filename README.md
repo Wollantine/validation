@@ -200,6 +200,26 @@ valid(42).map(x => x + 1); // => Valid(43)
 invalid(42, ['error']).map(x => x + 1); // => Invalid(43, ['error'])
 ```
 
+#### - `mapErrors(mappingFn: (errors: E[]) => E2 | E2[], validation: Validation<E, V>): Validation<E2, V>`
+
+Applies a function to the errors array and returns a new validation equally valid or invalid with the new errors array.
+Casts `mappingFn` result to an array, and throws if it is an empty array.
+
+```javascript
+valid(42).mapErrors(e => ['error']); // => Valid(42)
+invalid(42, ['error']).mapErrors(e => e.concat(['warning'])); // => Invalid(42, ['error', 'warning'])
+invalid(42, ['error']).mapErrors(e => 'hi'); // => Invalid(42, ['hi'])
+```
+
+#### - `mapError(mappingFn: (error: E) => E2, validation: Validation<E, V>): Validation<E2, V>`
+
+Applies a function to each of the errors in the validation and returns a new validation equally valid or invalid with the mapped errors.
+
+```javascript
+valid(42).mapError(e => 'Error: ' + e); // => Valid(42)
+invalid(42, ['Wrong arguments']).mapError(e => 'Error: ' + e)); // => Invalid(42, ['Error: Wrong arguments'])
+```
+
 #### - `ap(val: Validation<E, (t: T) => U>): Validation<E, U>`
 
 When passed a validation that contains a function as a value, applies that function to its value and returns a new validation with the concatenated errors of both.

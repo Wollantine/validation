@@ -93,6 +93,17 @@ const valid = of(42, []);
 const invalid = of('', ['Empty value']);
 ```
 
+#### - `fromEither(initialValue: T, either: Either<E | E[], T>): Validation<E, T>`
+
+If either is a Right, it returns a Valid type ignoring `initialValue`. Otherwise, returns an Invalid type with the `initialValue` and the errors wrapped in the Left type. It is curried and casts Left contents to an array.
+
+```javascript
+import { fromEither } from '@rexform/validation';
+
+const valid = fromEither(3, Either.Right(10));
+const invalid = fromEither(3, Either.Left('error'));
+```
+
 ### Other methods
 
 All these functions are available both as methods of Valid and Invalid types and also as functions.

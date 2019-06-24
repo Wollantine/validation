@@ -7,7 +7,15 @@ import Validation, {
   of,
   isValid,
   isInvalid,
+  fromEither,
 } from '../src/index';
+
+const Left = (x: any) => ({
+  fold: (leftFn: Function, rightFn: Function) => leftFn(x),
+});
+const Right = (x: any) => ({
+  fold: (leftFn: Function, rightFn: Function) => rightFn(x),
+});
 
 describe('Readme examples', () => {
   it('should behave the same with methods and functions', () => {
@@ -24,14 +32,14 @@ describe('invalid', () => {
   });
 
   it('should accept non-array errors as a single element errors array', () => {
-    const actual = invalid(10, 'error')
-    expect(actual).toEqual(invalid(10, ['error']))
-  })
+    const actual = invalid(10, 'error');
+    expect(actual).toEqual(invalid(10, ['error']));
+  });
 
   it('should be curried', () => {
     const actual = invalid(10);
-    expect(actual('error')).toEqual(invalid(10, ['error']))
-  })
+    expect(actual('error')).toEqual(invalid(10, ['error']));
+  });
 });
 
 describe('of', () => {
@@ -55,6 +63,28 @@ describe('of', () => {
 
   it('should return a valid when passing an empty array of errors', () => {
     expect(of(10, [])).toEqual(valid(10));
+  });
+});
+
+describe('fromEither', () => {
+  it('should create a Valid from a Right and ignore the initialValue', () => {
+    const actual = fromEither(3, Right(10));
+    expect(actual).toEqual(valid(10));
+  });
+
+  it('should create an Invalid from a Left using the initialValue', () => {
+    const actual = fromEither(3, Left(['errorMessage']));
+    expect(actual).toEqual(invalid(3, ['errorMessage']));
+  });
+
+  it('should create an Invalid wrapping the Left in an array', () => {
+    const actual = fromEither(3, Left('errorMessage'));
+    expect(actual).toEqual(invalid(3, ['errorMessage']));
+  });
+
+  it('should be curried', () => {
+    const actual = fromEither(3)(Left('errorMessage'));
+    expect(actual).toEqual(invalid(3, ['errorMessage']));
   });
 });
 
@@ -255,13 +285,6 @@ describe('fold', () => {
       'Value "test" has failed these validations: contain-numbers'
     );
   });
-});
-
-const Left = (x: any) => ({
-  fold: (leftFn: Function, rightFn: Function) => leftFn(x),
-});
-const Right = (x: any) => ({
-  fold: (leftFn: Function, rightFn: Function) => rightFn(x),
 });
 
 describe('validateEither', () => {

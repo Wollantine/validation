@@ -181,11 +181,13 @@ export const valid = <V>(value: V): Valid<any, V> => new Valid(value);
 
 export function invalid<E, V>(value: V): (errors: E | E[]) => Invalid<E, V>;
 export function invalid<E, V>(value: V, errors: E | E[]): Invalid<E, V>;
-export function invalid<E, V>(value: V, errors?: E | E[]): ((errors: E | E[]) => Invalid<E, V>) | Invalid<E, V> {
-  const op = (errors2: E | E[]) => (
-    new Invalid(value, ([] as E[]).concat(errors2))
-  )
-  return curry1(op, errors)
+export function invalid<E, V>(
+  value: V,
+  errors?: E | E[]
+): ((errors: E | E[]) => Invalid<E, V>) | Invalid<E, V> {
+  const op = (errors2: E | E[]) =>
+    new Invalid(value, ([] as E[]).concat(errors2));
+  return curry1(op, errors);
 }
 
 export function isValid<E, V>(
@@ -200,15 +202,31 @@ export function isInvalid<E, V>(
   return validation.variant === Variant.Invalid;
 }
 
-export const of = <e, v>(
-  value: v | Validation<e, v>,
-  errors?: e[] | null
-): Validation<e, v> => {
+export const of = <E, V>(
+  value: V | Validation<E, V>,
+  errors?: E[] | null
+): Validation<E, V> => {
   if (value instanceof Valid || value instanceof Invalid) {
     return value;
   }
   return errors && errors.length > 0 ? invalid(value, errors) : valid(value);
 };
+
+export function fromEither<E, V>(
+  initialValue: V
+): (either: Either<E | E[], V>) => Validation<E, V>;
+export function fromEither<E, V>(
+  initialValue: V,
+  either: Either<E | E[], V>
+): Validation<E, V>;
+export function fromEither<E, V>(
+  initialValue: V,
+  either?: Either<E | E[], V>
+): Validation<E, V> | ((either: Either<E | E[], V>) => Validation<E, V>) {
+  const op = (either2: Either<E | E[], V>) =>
+    either2.fold(invalid(initialValue), valid as (v: V) => Validation<E, V>);
+  return curry1(op, either);
+}
 
 export function errorsOr<T>(
   alt: T

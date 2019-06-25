@@ -19,7 +19,10 @@ export interface ValidationShape<E, A> {
     val: Validation<E, B>
   ) => Validation<E, B>;
   map: <B>(this: Validation<E, A>, fn: (a: A) => B) => Validation<E, B>;
-  mapErrors: <B>(this: Validation<E, A>, fn: (e: E[]) => B | B[]) => Validation<B, A>;
+  mapErrors: <B>(
+    this: Validation<E, A>,
+    fn: (e: E[]) => B | B[]
+  ) => Validation<B, A>;
   mapError: <B>(this: Validation<E, A>, fn: (e: E) => B) => Validation<B, A>;
   ap: <B>(
     this: Validation<E, A>,
@@ -84,11 +87,11 @@ export class Valid<E, V> implements ValidationShape<E, V> {
   }
 
   mapErrors<B>(fn: (e: E[]) => B | B[]): Validation<B, V> {
-    return mapErrors(fn, this)
+    return mapErrors(fn, this);
   }
 
   mapError<B>(fn: (e: E) => B): Validation<B, V> {
-    return mapError(fn, this)
+    return mapError(fn, this);
   }
 
   ap<B>(validation: Validation<E, (a: V) => B>): Validation<E, B> {
@@ -159,11 +162,11 @@ export class Invalid<E, V> implements ValidationShape<E, V> {
   }
 
   mapErrors<B>(fn: (e: E[]) => B | B[]): Validation<B, V> {
-    return mapErrors(fn, this)
+    return mapErrors(fn, this);
   }
 
   mapError<B>(fn: (e: E) => B): Validation<B, V> {
-    return mapError(fn, this)
+    return mapError(fn, this);
   }
 
   ap<B>(validation: Validation<E, (a: V) => B>): Validation<E, B> {
@@ -246,6 +249,44 @@ export function fromEither<E, V>(
   return curry1(op, either);
 }
 
+export function property<T extends { [key: string]: any }>(
+  property: string,
+  obj: T
+): Validation<string, any>;
+export function property<T extends { [key: string]: any }>(
+  property: string
+): (obj: T) => Validation<string, any>;
+export function property<T extends { [key: string]: any }>(
+  property: string,
+  obj?: T
+): Validation<string, any> | ((obj: T) => Validation<string, any>) {
+  const op = (obj2: T) =>
+    obj2[property] === undefined || obj2[property] === null
+      ? invalid(obj2[property], `Property "${property}" not found or null.`)
+      : valid(obj2[property]);
+  return curry1(op, obj);
+}
+
+const objWithPropertyIfNotUndefined = (
+  obj: { [key: string]: any },
+  key: string
+) => (value: any): { [key: string]: any } =>
+  value === undefined ? obj : { ...obj, [key]: value };
+
+export const allProperties = <E>(obj: {
+  [key: string]: Validation<E, any>;
+}): Validation<E, { [key: string]: any }> => {
+  return Object.keys(obj).reduce(
+    (validation, key) =>
+      validation.chain(previousProperties =>
+        (obj[key] as any)
+          .fold((e: E[], v: any) => invalid(undefined, e), valid)
+          .map(objWithPropertyIfNotUndefined(previousProperties, key))
+      ) as any,
+    valid({})
+  );
+};
+
 export function errorsOr<T>(
   alt: T
 ): <E>(validation: Validation<E, any>) => E[] | T;
@@ -297,28 +338,38 @@ export function map<A, B, E>(
   return curry1(op, validation);
 }
 
-export function mapErrors<E, E2, V>(m: (errors: E[]) => E2 | E2[], v: Validation<E, V>): Validation<E2, V>;
-export function mapErrors<E, E2, V>(m: (errors: E[]) => E2 | E2[]): (v: Validation<E, V>) => Validation<E2, V>;
+export function mapErrors<E, E2, V>(
+  m: (errors: E[]) => E2 | E2[],
+  v: Validation<E, V>
+): Validation<E2, V>;
+export function mapErrors<E, E2, V>(
+  m: (errors: E[]) => E2 | E2[]
+): (v: Validation<E, V>) => Validation<E2, V>;
 export function mapErrors<E, E2, V>(
   mappingFn: (errors: E[]) => E2 | E2[],
   validation?: Validation<E, V>
-): Validation<E2, V> | ((v: Validation<E, V>) => Validation<E2, V>) {
-  const op = (validation2: Validation<E, V>) => validation2.isValid()
-    ? validation2
-    : invalid(validation2.value, mappingFn(validation2.errorsOr([])));
+): Validation<E2, V> | ((v: Validation<E, V>) => Validation<E2, V>) {
+  const op = (validation2: Validation<E, V>) =>
+    validation2.isValid()
+      ? validation2
+      : invalid(validation2.value, mappingFn(validation2.errorsOr([])));
   return curry1(op, validation);
-};
+}
 
-export function mapError<E, E2, V>(m: (error: E) => E2, v: Validation<E, V>): Validation<E2, V>;
-export function mapError<E, E2, V>(m: (error: E) => E2): (v: Validation<E, V>) => Validation<E2, V>;
+export function mapError<E, E2, V>(
+  m: (error: E) => E2,
+  v: Validation<E, V>
+): Validation<E2, V>;
+export function mapError<E, E2, V>(
+  m: (error: E) => E2
+): (v: Validation<E, V>) => Validation<E2, V>;
 export function mapError<E, E2, V>(
   mappingFn: (error: E) => E2,
   validation?: Validation<E, V>
 ): Validation<E2, V> | ((v: Validation<E, V>) => Validation<E2, V>) {
-  const op = (validation2: Validation<E, V>) => (
-    mapErrors(errors => errors.map(mappingFn), validation2)
-  )
-  return curry1(op, validation)
+  const op = (validation2: Validation<E, V>) =>
+    mapErrors(errors => errors.map(mappingFn), validation2);
+  return curry1(op, validation);
 }
 
 export function ap<A, B, E>(
@@ -474,6 +525,8 @@ export const Validation = {
   isInvalid,
   of,
   fromEither,
+  property,
+  allProperties,
   errorsOr,
   concat,
   map,

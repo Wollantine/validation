@@ -10,6 +10,8 @@ import Validation, {
   fromEither,
   mapErrors,
   mapError,
+  allProperties,
+  property,
 } from '../src/index';
 
 const Left = (x: any) => ({
@@ -87,6 +89,91 @@ describe('fromEither', () => {
   it('should be curried', () => {
     const actual = fromEither(3)(Left('errorMessage'));
     expect(actual).toEqual(invalid(3, ['errorMessage']));
+  });
+});
+
+describe('property', () => {
+  it('should return a Valid with the value of the property if it was present', () => {
+    const obj = { propName: 10 };
+    const actual = property('propName', obj);
+    expect(actual).toEqual(valid(10));
+  });
+
+  it('should return an Invalid with undefined and an explanatory message if the property was not present', () => {
+    const obj = { propName: 10 };
+    const actual = property('x', obj);
+    expect(actual).toEqual(
+      invalid(undefined, ['Property "x" not found or null.'])
+    );
+  });
+
+  it('should return an Invalid with null and an explanatory message if the property was null', () => {
+    const obj = { propName: null };
+    const actual = property('propName', obj);
+    expect(actual).toEqual(
+      invalid(null, ['Property "propName" not found or null.'])
+    );
+  });
+
+  it('should return an Invalid with undefined and an explanatory message if the property was undefined', () => {
+    const obj = { propName: undefined };
+    const actual = property('propName', obj);
+    expect(actual).toEqual(
+      invalid(undefined, ['Property "propName" not found or null.'])
+    );
+  });
+
+  it('should be curried', () => {
+    const obj = { propName: 10 };
+    const actual = property('propName')(obj);
+    expect(actual).toEqual(valid(10));
+  });
+});
+
+describe('allProperties', () => {
+  it('should map an object of Valids into a Valid of object', () => {
+    const obj = {
+      a: valid(10),
+      b: valid('hi'),
+    };
+    const expected = valid({ a: 10, b: 'hi' });
+    expect(allProperties(obj)).toEqual(expected);
+  });
+
+  it('should map an object of Invalids into an Invalid of object keeping the errors', () => {
+    const obj = {
+      a: invalid(10, 'error1'),
+      b: invalid('hi', 'error2'),
+    };
+    const expected = invalid({}, ['error1', 'error2']);
+    expect(allProperties(obj)).toEqual(expected);
+  });
+
+  it('should omit undefined values in invalid properties, but keep the errors', () => {
+    const obj = {
+      a: invalid(undefined, 'error1'),
+      b: valid('hi'),
+    };
+    const expected = invalid({ b: 'hi' }, ['error1']);
+    expect(allProperties(obj)).toEqual(expected);
+  });
+
+  it('should omit values in invalid properties, but keep the errors', () => {
+    const obj = {
+      a: invalid(10, 'error1'),
+      b: valid('hi'),
+    };
+    const expected = invalid({ b: 'hi' }, ['error1']);
+    expect(allProperties(obj)).toEqual(expected);
+  });
+
+  it('should keep undefined values in valid properties', () => {
+    const obj = {
+      a: invalid(undefined, 'error1'),
+      b: valid(undefined),
+    };
+    const expected = invalid({ b: undefined }, ['error1']);
+    expect(allProperties(obj)).toEqual(expected);
   });
 });
 
@@ -230,24 +317,24 @@ describe('map', () => {
 describe('mapErrors', () => {
   it('should be an identity function on a Valid type', () => {
     const v = valid(10);
-    const actual = mapErrors(errors => ['error'], v);
+    const actual = v.mapErrors(errors => ['error']);
     expect(actual).toEqual(v);
   });
 
   it('should map all errors in an Invalid type with mappingFn', () => {
     const inv = invalid(3, ['Invalid address', 'Missing number']);
-    const actual = mapErrors(e => e[0], inv);
+    const actual = inv.mapErrors(e => e[0]);
     const expected = invalid(3, ['Invalid address']);
     expect(actual).toEqual(expected);
   });
 
   it('should cast result to an array', () => {
-    const actual = mapErrors(() => 'error2', invalid(3, ['error']));
+    const actual = invalid(3, ['error']).mapErrors(() => 'error2');
     expect(actual).toEqual(invalid(3, ['error2']));
   });
 
   it('should throw when mapping to an empty array', () => {
-    const actual = () => mapErrors(() => [], invalid(3, ['error']));
+    const actual = () => invalid(3, ['error']).mapErrors(() => []);
     expect(actual).toThrow();
   });
 });
@@ -255,13 +342,13 @@ describe('mapErrors', () => {
 describe('mapError', () => {
   it('should be an identity function on a Valid type', () => {
     const v = valid(10);
-    const actual = mapError(e => 'Error: ' + e, v);
+    const actual = v.mapError(e => 'Error: ' + e);
     expect(actual).toEqual(v);
   });
 
   it('should map each error in an Invalid type with mappingFn', () => {
     const inv = invalid(3, ['Invalid address', 'Missing number']);
-    const actual = mapError(e => 'Error: ' + e, inv);
+    const actual = inv.mapError(e => 'Error: ' + e);
     const expected = invalid(3, [
       'Error: Invalid address',
       'Error: Missing number',

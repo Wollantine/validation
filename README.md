@@ -104,6 +104,34 @@ const valid = fromEither(3, Either.Right(10));
 const invalid = fromEither(3, Either.Left('error'));
 ```
 
+#### - `property(propertyName: string, object: {}): Validation<string, any>`
+
+Returns a Valid with the object's property value if found and not null, otherwise returns an Invalid with an error message.
+
+```javascript
+import { property } from '@rexform/validation';
+
+property('a', { a: 10 }); // => Valid(10)
+property('a', {}); // => Invalid(undefined, ['Property "a" not found or null.'])
+```
+
+#### - `allProperties(object: {[key: string]: Validation<E, V>}): Validation<E, {[key: string]: V}>`
+
+Transforms an object of Validations into a Validation of the object. Keeps all Valid properties and all errors and discards all Invalid values.
+
+```javascript
+import { allProperties } from '@rexform/validation';
+
+const obj = {
+  a: valid(10),
+  b: valid(undefined),
+  c: invalid(10, ['Invalid number']),
+  d: invalid(null, ['Property "d" not found']),
+};
+
+allProperties(obj); // => Invalid({a: 10, b: undefined}, ['Invalid number', 'Property "d" not found'])
+```
+
 ### Other methods
 
 All these functions are available both as methods of Valid and Invalid types and also as functions.

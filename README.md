@@ -132,6 +132,18 @@ const obj = {
 allProperties(obj); // => Invalid({a: 10, b: undefined}, ['Invalid number', 'Property "d" not found'])
 ```
 
+#### - `fromPredicateOr(errorFn: (v: V) => E, predicate: (v: V) => boolean): (v: V) => Validation<E, V>`
+
+Transforms a boolean predicate into a function that receives a value and returns a Validation. Curried.
+
+```javascript
+const isEven = (x: number) => x % 2 === 0;
+const validateEven = fromPredicateOr(v => `${v} is not even.`, isEven);
+
+validateEven(2); // => Valid(2)
+validateEven(3); // => Invalid(3, ['3 is not even'])
+```
+
 ### Other methods
 
 All these functions are available both as methods of Valid and Invalid types and also as functions.

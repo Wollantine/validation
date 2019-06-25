@@ -207,7 +207,7 @@ export function invalid<E, V>(
   errors?: E | E[]
 ): ((errors: E | E[]) => Invalid<E, V>) | Invalid<E, V> {
   const op = (errors2: E | E[]) =>
-    new Invalid(value, ([] as E[]).concat(errors2));
+    new Invalid(value, arrayOrItemToArray(errors2));
   return curry1(op, errors);
 }
 
@@ -286,6 +286,24 @@ export const allProperties = <E>(obj: {
     valid({})
   );
 };
+
+export function fromPredicateOr<E, V>(
+  errorFn: (v: V) => E,
+  predicate: (v: V) => boolean
+): (value: V) => Validation<E, V>;
+export function fromPredicateOr<E, V>(
+  errorFn: (v: V) => E
+): (predicate: (v: V) => boolean) => (value: V) => Validation<E, V>;
+export function fromPredicateOr<E, V>(
+  errorFn: (v: V) => E,
+  predicate?: (v: V) => boolean
+):
+  | ((value: V) => Validation<E, V>)
+  | ((predicate: (v: V) => boolean) => (value: V) => Validation<E, V>) {
+  const op = (predicate2: (v: V) => boolean) => (v: V) =>
+    predicate2(v) ? valid(v) : invalid(v, errorFn(v));
+  return curry1(op, predicate);
+}
 
 export function errorsOr<T>(
   alt: T
@@ -527,6 +545,7 @@ export const Validation = {
   fromEither,
   property,
   allProperties,
+  fromPredicateOr,
   errorsOr,
   concat,
   map,

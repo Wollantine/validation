@@ -12,6 +12,7 @@ import Validation, {
   mapError,
   allProperties,
   property,
+  fromPredicateOr,
 } from '../src/index';
 
 const Left = (x: any) => ({
@@ -174,6 +175,34 @@ describe('allProperties', () => {
     };
     const expected = invalid({ b: undefined }, ['error1']);
     expect(allProperties(obj)).toEqual(expected);
+  });
+});
+
+describe('fromPredicateOr', () => {
+  it('should return a Valid when the predicate evaluates to true', () => {
+    const isEven = (x: number) => x % 2 === 0;
+    const validateEven = fromPredicateOr(() => 'Must be even', isEven);
+    expect(validateEven(2)).toEqual(valid(2));
+  });
+
+  it('should return an Invalid with the error when the predicate evaluates to false', () => {
+    const isEven = (x: number) => x % 2 === 0;
+    const validateEven = fromPredicateOr(() => 'Must be even', isEven);
+    expect(validateEven(3)).toEqual(invalid(3, ['Must be even']));
+  });
+
+  it('should call errorFn with the value', () => {
+    const isEven = (x: number) => x % 2 === 0;
+    const validateEven = fromPredicateOr(v => `${v} is not even.`, isEven);
+    expect(validateEven(3)).toEqual(invalid(3, ['3 is not even.']));
+  });
+
+  it('should be curried', () => {
+    const isEven = (x: number) => x % 2 === 0;
+    const validateEven = fromPredicateOr<string, number>(
+      v => `${v} is not even.`
+    )(isEven);
+    expect(validateEven(3)).toEqual(invalid(3, ['3 is not even.']));
   });
 });
 

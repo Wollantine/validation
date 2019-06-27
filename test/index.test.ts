@@ -14,6 +14,7 @@ import Validation, {
   validateProperties,
   empty,
   concat,
+  sequence,
 } from '../src/index';
 
 const Left = (x: any) => ({
@@ -401,7 +402,35 @@ describe('concat', () => {
   });
 });
 
-describe('sequence', () => {});
+describe('sequence', () => {
+  it('should return a Valid from an empty sequence', () => {
+    expect(sequence([])).toEqual(valid([]));
+  });
+
+  it('should return a Valid of an array from an array of Valids', () => {
+    const actual = sequence([valid(1), valid(2), valid(3)]);
+    expect(actual).toEqual(valid([1, 2, 3]));
+  });
+
+  it('should return an Invalid of the valid values and the errors from a mixed array', () => {
+    const actual = sequence([
+      valid(10),
+      invalid(-5, ['Too low']),
+      invalid(12, ['Too high']),
+      valid(8),
+    ]);
+    expect(actual).toEqual(invalid([10, 8], ['Too low', 'Too high']));
+  });
+
+  it('should return an Invalid of an empty array and all the errors from an array of Invalids', () => {
+    const actual = sequence([
+      invalid(1, 'error1'),
+      invalid(2, 'error2'),
+      invalid(3, 'error3'),
+    ]);
+    expect(actual).toEqual(invalid([], ['error1', 'error2', 'error3']));
+  });
+});
 
 describe('concatErr', () => {
   it('should change the value', () => {

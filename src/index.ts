@@ -389,6 +389,11 @@ export function concat<E, A>(
   return curry1(op, val);
 }
 
+export const sequence = <E, A>(
+  validations: Validation<E, A>[]
+): Validation<E, A[]> =>
+  validations.reduce((acc, b) => b.concat(acc), empty() as Validation<E, A[]>);
+
 export function concatErr<E, B>(
   valB: Validation<E, B>
 ): (valA: Validation<E, any>) => Validation<E, B>;
@@ -620,6 +625,7 @@ export const Validation = {
   errorsOr,
   empty,
   concat,
+  sequence,
   concatErr,
   map,
   mapErrors,

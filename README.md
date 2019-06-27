@@ -204,15 +204,14 @@ valid([2]).concat(valid([1])); // => Valid([1, 2])
 Transforms an array of Validations into a Validation of an array using concat, keeping only valid values and all errors. It will return an Invalid unless all Validations are Valid.
 
 ```javascript
-import { sequence } from '@rexform/validation'
+import { sequence } from '@rexform/validation';
 
 sequence([
   valid(10),
   invalid(-5, ['Too low']),
-  invalid(12, ['Too high'])),
+  invalid(12, ['Too high']),
   valid(8),
-]) // => Invalid([10, 8], ['Too low', 'Too high'])
-
+]); // => Invalid([10, 8], ['Too low', 'Too high'])
 ```
 
 ### Other methods

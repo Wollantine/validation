@@ -14,7 +14,12 @@ export interface ValidationShape<E, A> {
   isInvalid: (this: Validation<E, A>) => this is Invalid<E, A>;
   errorsOr: <T>(this: Validation<E, A>, alt: T) => E[] | T;
 
-  concat: <B>(
+  empty: <B>(this: Validation<E, A | B[]>) => Validation<E, B[]>;
+  concat: (
+    this: Validation<E, A>,
+    val: Validation<E, A[]>
+  ) => Validation<E, A[]>;
+  concatErr: <B>(
     this: Validation<E, A>,
     val: Validation<E, B>
   ) => Validation<E, B>;
@@ -78,8 +83,16 @@ export class Valid<E, V> implements ValidationShape<E, V> {
     return alt;
   }
 
-  concat<B>(val: Validation<E, B>): Validation<E, B> {
-    return concat(val, this);
+  empty<B>(): Validation<E, B[]> {
+    return empty();
+  }
+
+  concat(val: Validation<E, V[]>): Validation<E, V[]> {
+    return concat(val, map(arrayOrItemToArray, this));
+  }
+
+  concatErr<B>(val: Validation<E, B>): Validation<E, B> {
+    return concatErr(val, this);
   }
 
   map<B>(fn: (a: V) => B): Validation<E, B> {
@@ -153,8 +166,16 @@ export class Invalid<E, V> implements ValidationShape<E, V> {
     return errorsOr(alt, this);
   }
 
-  concat<B>(val: Validation<E, B>): Validation<E, B> {
-    return concat(val, this);
+  empty<B>(): Validation<E, B[]> {
+    return empty();
+  }
+
+  concat(val: Validation<E, V[]>): Validation<E, V[]> {
+    return concat(val, map(arrayOrItemToArray, this));
+  }
+
+  concatErr<B>(val: Validation<E, B>): Validation<E, B> {
+    return concatErr(val, this);
   }
 
   map<B>(fn: (a: V) => B): Invalid<E, B> {
@@ -287,6 +308,32 @@ export const allProperties = <E>(obj: {
   );
 };
 
+export function validateProperties(validations: {
+  [key: string]: (v: any) => Validation<string, any>;
+}): (obj: { [key: string]: any }) => { [key: string]: Validation<string, any> };
+export function validateProperties(
+  validations: { [key: string]: (v: any) => Validation<string, any> },
+  obj: { [key: string]: any }
+): { [key: string]: Validation<string, any> };
+export function validateProperties(
+  validations: { [key: string]: (v: any) => Validation<string, any> },
+  obj?: { [key: string]: any }
+):
+  | { [key: string]: Validation<string, any> }
+  | ((obj: {
+      [key: string]: any;
+    }) => { [key: string]: Validation<string, any> }) {
+  const op = (obj2: { [key: string]: any }) =>
+    Object.keys(validations).reduce(
+      (acc: { [key: string]: any }, k: string) => ({
+        ...acc,
+        [k]: (property(k, obj2).chain as any)(validations[k]),
+      }),
+      {}
+    );
+  return curry1(op, obj);
+}
+
 export function fromPredicateOr<E, V>(
   errorFn: (v: V) => E,
   predicate: (v: V) => boolean
@@ -318,14 +365,38 @@ export function errorsOr<E, T>(
   return curry1(op, validation);
 }
 
-export function concat<E, B>(
+export function empty<E, B>(): Validation<E, B[]> {
+  return valid([]);
+}
+
+export function concat<E, A>(
+  listVal: Validation<E, A[]>
+): (val: Validation<E, A[]>) => Validation<E, A[]>;
+export function concat<E, A>(
+  listVal: Validation<E, A[]>,
+  val: Validation<E, A[]>
+): Validation<E, A[]>;
+export function concat<E, A>(
+  listVal: Validation<E, A[]>,
+  val?: Validation<E, A[]>
+): Validation<E, A[]> | ((val: Validation<E, A[]>) => Validation<E, A[]>) {
+  const op = (val2: Validation<E, A[]>) =>
+    (listVal.concatErr as any)(val2).map(
+      val2.isValid()
+        ? (a: A[]) => [...listVal.value, ...a]
+        : () => listVal.value
+    );
+  return curry1(op, val);
+}
+
+export function concatErr<E, B>(
   valB: Validation<E, B>
 ): (valA: Validation<E, any>) => Validation<E, B>;
-export function concat<E, B>(
+export function concatErr<E, B>(
   valB: Validation<E, B>,
   valA: Validation<E, any>
 ): Validation<E, B>;
-export function concat<E, B>(
+export function concatErr<E, B>(
   valB: Validation<E, B>,
   valA?: Validation<E, any>
 ): Validation<E, B> | ((valA: Validation<E, any>) => Validation<E, B>) {
@@ -426,7 +497,7 @@ export function chain<A, B, E>(
 ): Validation<E, B> | ((validation: Validation<E, A>) => Validation<E, B>) {
   const op = (v: Validation<E, A>) => {
     const newValidation = fn(v.value);
-    return concat(newValidation, v);
+    return concatErr(newValidation, v);
   };
   return curry1(op, validation);
 }
@@ -476,7 +547,7 @@ export function validateEither<E, V>(
         >,
       value => valid(value) as Validation<E, V>
     );
-    return concat(newVal, validation);
+    return concatErr(newVal, validation);
   };
   return curry1(op, either);
 }
@@ -547,7 +618,9 @@ export const Validation = {
   allProperties,
   fromPredicateOr,
   errorsOr,
+  empty,
   concat,
+  concatErr,
   map,
   mapErrors,
   mapError,

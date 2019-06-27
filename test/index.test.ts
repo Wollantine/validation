@@ -2,17 +2,18 @@ import Validation, {
   valid,
   invalid,
   errorsOr,
-  concat,
+  concatErr,
   map,
   of,
   isValid,
   isInvalid,
   fromEither,
-  mapErrors,
-  mapError,
   allProperties,
   property,
   fromPredicateOr,
+  validateProperties,
+  empty,
+  concat,
 } from '../src/index';
 
 const Left = (x: any) => ({
@@ -206,6 +207,48 @@ describe('fromPredicateOr', () => {
   });
 });
 
+describe('validateProperties', () => {
+  it('should validate the presence of the properties using Validation.property', () => {
+    const obj = {
+      a: 10,
+      b: 'hi',
+    };
+    const actual = validateProperties({ a: valid, b: valid, c: valid }, obj);
+    const expected = {
+      a: valid(10),
+      b: valid('hi'),
+      c: invalid(undefined, 'Property "c" not found or null.'),
+    };
+    expect(actual).toEqual(expected);
+  });
+
+  it('should chain the passed validations', () => {
+    const obj = {
+      a: 10,
+      b: 'hi',
+    };
+    const actual = validateProperties(
+      {
+        a: fromPredicateOr(() => 'Must be below 10', v => v <= 10),
+        b: value => invalid(value, 'Must not have b'),
+        c: valid,
+      },
+      obj
+    );
+    const expected = {
+      a: valid(10),
+      b: invalid('hi', ['Must not have b']),
+      c: invalid(undefined, ['Property "c" not found or null.']),
+    };
+    expect(actual).toEqual(expected);
+  });
+
+  it('should be curried', () => {
+    const actual = validateProperties({ a: valid })({ a: 10 });
+    expect(actual).toEqual({ a: valid(10) });
+  });
+});
+
 describe('isValid', () => {
   it('should be true for Valid', () => {
     const actual = valid('username').isValid();
@@ -284,29 +327,107 @@ describe('errorsOr', () => {
   });
 });
 
+describe('empty', () => {
+  it('should return valid([])', () => {
+    expect(empty()).toEqual(valid([]));
+  });
+
+  it('should empty an existing Valid (immutably)', () => {
+    const v = valid(10);
+    expect(v.empty()).toEqual(valid([]));
+    expect(v).toEqual(valid(10));
+  });
+
+  it('should empty an existing Invalid (immutably)', () => {
+    const v = invalid(10, 'hi');
+    expect(v.empty()).toEqual(valid([]));
+    expect(v).toEqual(invalid(10, 'hi'));
+  });
+});
+
 describe('concat', () => {
+  it('should append a valid value to an array', () => {
+    const actual = concat(valid([1, 2]), valid([3]));
+    expect(actual).toEqual(valid([1, 2, 3]));
+  });
+
+  it('should concat an array of arrays to another array of arrays', () => {
+    const actual = concat(valid([[1]]), valid([[2]]));
+    expect(actual).toEqual(valid([[1], [2]]));
+  });
+
+  it('should concat only the errors of an invalid', () => {
+    const actual = concat(valid([2]), invalid([3], ['error']));
+    expect(actual).toEqual(invalid([2], ['error']));
+  });
+
+  it('should preserve the errors of an invalid when concatenating a valid', () => {
+    const actual = concat(invalid([2], ['error1']), valid([3]));
+    expect(actual).toEqual(invalid([2, 3], ['error1']));
+  });
+
+  it('should preserve the errors of an invalid when concatenating an invalid', () => {
+    const actual = concat(invalid([2], ['error1']), invalid([3], ['error2']));
+    expect(actual).toEqual(invalid([2], ['error1', 'error2']));
+  });
+
+  it('should be an identity function when concatenating empty to a valid', () => {
+    const validation = valid([10]);
+    const actual = concat(validation, empty() as any);
+    expect(actual).toEqual(validation);
+  });
+
+  it('should be an identity function when concatenating a valid to empty', () => {
+    const validation = valid([10]);
+    const actual = concat(empty(), validation);
+    expect(actual).toEqual(validation);
+  });
+
+  it('should have the correct parameter order when using it as a method', () => {
+    const validation = valid(2);
+    const actual = validation.concat(valid([1]));
+    expect(actual).toEqual(valid([1, 2]));
+  });
+
+  it('should cast a non-array value to array when called as a method', () => {
+    const actual = valid(2).concat(valid([1]));
+    expect(actual).toEqual(valid([1, 2]));
+  });
+
+  it('should concatenate only the errors when used as a method on an Invalid', () => {
+    const validation = invalid(3, 'error');
+    const actual = validation.concat(valid([1]));
+    expect(actual).toEqual(invalid([1], ['error']));
+  });
+});
+
+describe('sequence', () => {});
+
+describe('concatErr', () => {
   it('should change the value', () => {
-    const actual = valid('discarded value').concat(valid('new value'));
+    const actual = valid('discarded value').concatErr(valid('new value'));
     expect(actual).toEqual(valid('new value'));
   });
 
   it('should concatenate errors', () => {
-    const actual = invalid('...', ['hello']).concat(invalid('test', ['world']));
+    const actual = invalid('...', ['hello']).concatErr(
+      invalid('test', ['world'])
+    );
     expect(actual).toEqual(invalid('test', ['hello', 'world']));
   });
 
   it('should work with (valid, invalid)', () => {
-    const actual = valid(23).concat(invalid('test', ['world']));
+    const actual = valid(23).concatErr(invalid('test', ['world']));
     expect(actual).toEqual(invalid('test', ['world']));
   });
 
   it('should work with (invalid, valid)', () => {
-    const actual = invalid('test', ['world']).concat(valid(23));
+    const actual = invalid('test', ['world']).concatErr(valid(23));
     expect(actual).toEqual(invalid(23, ['world']));
   });
 
   it('should have the correct order in the function style', () => {
-    const actual = concat(
+    const actual = concatErr(
       invalid('test', ['world']),
       invalid('...', ['hello'])
     );
@@ -314,7 +435,7 @@ describe('concat', () => {
   });
 
   it('should curry in the right order', () => {
-    const concatWorld = concat(invalid(10, ['world']));
+    const concatWorld = concatErr(invalid(10, ['world']));
     expect(concatWorld(invalid(12, ['hello']))).toEqual(
       invalid(10, ['hello', 'world'])
     );

@@ -7,7 +7,7 @@ Validation is a [Static Land](https://github.com/rpominov/static-land) compatibl
 
 Its power shines when using atomic validator functions that return Either an error or the value (modified or not).
 
-It implements the algebras Monad (map, ap, of, chain) and Semigroup (concat).
+It implements the algebras Monad (map, ap, of, chain), Monoid for array values (concat, empty), and Semigroup for errors (concatErr).
 
 ## Type
 
@@ -104,6 +104,22 @@ const valid = fromEither(3, Either.Right(10));
 const invalid = fromEither(3, Either.Left('error'));
 ```
 
+#### - `fromPredicateOr(errorFn: (v: V) => E, predicate: (v: V) => boolean): (v: V) => Validation<E, V>`
+
+Transforms a boolean predicate into a function that receives a value and returns a Validation. Curried.
+
+```javascript
+import { fromPredicateOr } from '@rexform/validation';
+
+const isEven = (x: number) => x % 2 === 0;
+const validateEven = fromPredicateOr(v => `${v} is not even.`, isEven);
+
+validateEven(2); // => Valid(2)
+validateEven(3); // => Invalid(3, ['3 is not even'])
+```
+
+### Dealing with Objects
+
 #### - `property(propertyName: string, object: {}): Validation<string, any>`
 
 Returns a Valid with the object's property value if found and not null, otherwise returns an Invalid with an error message.
@@ -132,16 +148,71 @@ const obj = {
 allProperties(obj); // => Invalid({a: 10, b: undefined}, ['Invalid number', 'Property "d" not found'])
 ```
 
-#### - `fromPredicateOr(errorFn: (v: V) => E, predicate: (v: V) => boolean): (v: V) => Validation<E, V>`
+#### - `validateProperties(validations: {[key: string]: (v: V) => Validation<E, V>}, object: {[key: string]: V}): {[key: string]: Validation<E, V>}`
 
-Transforms a boolean predicate into a function that receives a value and returns a Validation. Curried.
+Given an object describing the validations for each desired property, checks the presence of that property in an object and validates the value against the validations, returning an object of the resulting validations. Curried.
+
+To check the presence of the property, it uses `Validation.property(propName)`, and then chains the passed validation.
 
 ```javascript
-const isEven = (x: number) => x % 2 === 0;
-const validateEven = fromPredicateOr(v => `${v} is not even.`, isEven);
+import { validateProperties, fromPredicateOr } from '@rexform/validation';
 
-validateEven(2); // => Valid(2)
-validateEven(3); // => Invalid(3, ['3 is not even'])
+const obj = {
+  a: 10,
+  b: 'hi',
+};
+
+validateProperties(
+  {
+    a: fromPredicateOr(() => 'Must be below 10', v => v <= 10),
+    b: value => invalid(value, 'Must not have b'),
+    c: valid,
+  },
+  obj
+);
+/* => {
+  a: valid(10),
+  b: invalid('hi', ['Must not have b']),
+  c: invalid(undefined, ['Property "c" not found or null.']),
+} */
+```
+
+### Dealing with Arrays
+
+#### - `empty(): Validation<any, any[]>`
+
+Returns `valid([])`: A valid Validation of an empty array value.
+
+#### - `concat(listValidation: Validation<E, V[]>, val: Validation<E, V[]>): Validation<E, V[]>`
+
+Concatenates an array validation to another array validation, appending the values only if its valid, otherwise appending the errors.
+
+When called as a method on an existing Validation, if it is not an array, it transforms the value to a one-item array.
+
+```javascript
+import { concat } from '@rexform/validation';
+
+concat(valid([1]), valid([2])); // => Valid([1, 2])
+concat(valid([1, 2]), valid([3])); // => Valid([1, 2, 3])
+concat(valid([2]), invalid([3], ['error'])); // => Invalid([2], ['error'])
+
+valid([2]).concat(valid([1])); // => Valid([1, 2])
+```
+
+#### - `sequence(validations: Validation<E, V>[]): Validation<E, V[]>`
+
+Transforms an array of Validations into a Validation of an array using concat, keeping only valid values and all errors. It will return an Invalid unless all Validations are Valid.
+
+```javascript
+import { sequence } from '@rexform/validation'
+
+sequence([
+  valid(10),
+  invalid(-5, ['Too low']),
+  invalid(12, ['Too high'])),
+  valid(8),
+]) // => Invalid([10, 8], ['Too low', 'Too high'])
+
 ```
 
 ### Other methods

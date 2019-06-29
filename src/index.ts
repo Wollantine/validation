@@ -621,6 +621,7 @@ export const Validation = {
   fromEither,
   property,
   allProperties,
+  validateProperties,
   fromPredicateOr,
   errorsOr,
   empty,

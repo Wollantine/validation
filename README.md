@@ -1,3 +1,4 @@
+[![npm version](https://badge.fury.io/js/%40rexform%2Fvalidation.svg)](https://badge.fury.io/js/%40rexform%2Fvalidation)
 [![Build Status](https://travis-ci.org/kwirke/validation.svg?branch=master)](https://travis-ci.org/kwirke/validation)
 [![codecov](https://codecov.io/gh/kwirke/validation/branch/master/graph/badge.svg)](https://codecov.io/gh/kwirke/validation)
 
@@ -8,6 +9,12 @@ Validation is a [Static Land](https://github.com/rpominov/static-land) compatibl
 Its power shines when using atomic validator functions that return Either an error or the value (modified or not).
 
 It implements the algebras Monad (map, ap, of, chain), Monoid for array values (concat, empty), and Semigroup for errors (concatErr).
+
+## Install
+
+```
+npm i @rexform/validation
+```
 
 ## Type
 

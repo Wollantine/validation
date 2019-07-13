@@ -44,6 +44,12 @@ Validation.of('wrong zipcode').validateAll(validators); // => Invalid(['Must hav
 Validation.of('   ').validateAll(validators); // => Invalid(['Can`t be empty', 'Must have numbers'], '')
 ```
 
+## Use Cases
+
+- [Composable decoders](https://dev.to/kwirke/javascript-composable-decoders-with-validation-1ldh)
+- Form validations (where you need to keep showing the value even when it's invalid).
+- Good error reporting for libraries configurations.
+
 ## API
 
 ### Constructors

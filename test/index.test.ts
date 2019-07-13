@@ -27,7 +27,7 @@ const Right = (x: any) => ({
 describe('Readme examples', () => {
   it('should behave the same with methods and functions', () => {
     const a = Validation.valid(42).map(x => x + 1);
-    const b = Validation.map(x => x + 1, Validation.valid(42));
+    const b = Validation.map((x: number) => x + 1, Validation.valid(42));
     expect(a).toEqual(b);
   });
 });

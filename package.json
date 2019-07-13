@@ -43,6 +43,16 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
+  "jest": {
+    "coverageThreshold": {
+      "global": {
+        "branches": 100,
+        "functions": 100,
+        "lines": 100,
+        "statements": 100
+      }
+    }
+  },
   "devDependencies": {
     "@types/jest": "^24.0.12",
     "husky": "^2.2.0",

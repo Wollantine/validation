@@ -1,11 +1,12 @@
 sudo: false
 language: node_js
 node_js:
+  - '12'
   - '10'
-  - '8'
 script:
   - npm i -g codecov
   - npm test
   - npm run build
 after_success:
   - codecov
+  - npm publish --access public

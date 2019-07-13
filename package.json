@@ -1,6 +1,6 @@
 {
   "name": "@rexform/validation",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "main": "dist/index.js",
   "umd:main": "dist/rexformvalidation.umd.production.js",
   "module": "dist/rexformvalidation.es.production.js",
